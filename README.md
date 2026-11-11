@@ -74,3 +74,7 @@ Then use a test room to verify joining, locked choices, autosave, host controls,
 This is a Node.js application with a persistent database. GitHub stores the source; GitHub Pages alone cannot run its interactive backend. The existing cloud server continues to host the live site.
 
 The QR generator's third-party license is retained in `public/QR-LICENSE.txt`.
+
+## Interface refresh (3.1)
+
+Warm editorial styling, mobile setting shortcuts, clearer unlock states and preserved keyboard focus during autosave. See [UI refresh notes](docs/UI-REFRESH.md) for changes, validation limits and the four-file server update.

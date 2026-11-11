@@ -1,12 +1,18 @@
 {
   "name": "life-settings",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "description": "A live bilingual classroom experience about gender stereotypes and individual choice.",
   "type": "module",
-  "engines": { "node": ">=24.0.0" },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "start": "node local/server.mjs",
-    "check": "node --check local/server.mjs && node --check shared/core.mjs && node --check public/life.js && node --check public/poster.js && node --check public/fields.js"
+    "check": "node --check local/server.mjs && node --check shared/core.mjs && node --check public/life.js && node --check public/poster.js && node --check public/fields.js",
+    "test": "node tests/ui-smoke.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "31.0.0"
   }
 }
