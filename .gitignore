@@ -1,0 +1,22 @@
+# Runtime data and classroom identities
+/data/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+LifeSettings_Host_*.json
+LifeSettings_Results_*.json
+My_Life_Settings*.json
+
+# Credentials, backups and local tooling
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.tar.gz
+*.zip
+*.log
+node_modules/
+.DS_Store
+Thumbs.db
