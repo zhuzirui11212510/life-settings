@@ -1,0 +1,98 @@
+[
+  {
+    "id": "wave",
+    "title": "两源一静点",
+    "description": "在同一片水槽里移动波源和探针，观察两列波叠加时的低振幅区域。",
+    "prompt": "打开双源，调节相位或移动探针，找到振幅低于 5% 的位置并锁定静点。",
+    "hash": "#wave",
+    "options": [{ "id": "completed", "label": "已捕捉干涉静点" }]
+  },
+  {
+    "id": "cut",
+    "title": "第二个镜头",
+    "description": "同一张脸，剪出两种解释。比较相邻镜头如何改变对角色的判断。",
+    "prompt": "先记下对人物表情的判断并存为 A，再换一个相邻镜头，记录第二次判断。",
+    "hash": "#cut",
+    "options": [
+      { "id": "same-reading", "label": "两次判断相同" },
+      { "id": "changed-reading", "label": "第二次判断改变" }
+    ]
+  },
+  {
+    "id": "metro",
+    "title": "末班车调度局",
+    "description": "封闭一段铁轨，在同一张路网上比较时间、站数和换乘次数。",
+    "prompt": "应用施工预设，保留原起终点，选择用时最短并让末班车开到终点。",
+    "hash": "#metro",
+    "options": [{ "id": "completed", "label": "已验证施工期间最快路线" }]
+  },
+  {
+    "id": "fold",
+    "title": "折痕印刷所",
+    "description": "转动或移动折痕，在实时变化的镜像印迹中寻找对称轴。",
+    "prompt": "任选一张印版，调整折痕与偏移，让镜像对准，再合拢纸面核对。",
+    "hash": "#fold",
+    "options": [
+      { "id": "kite", "label": "纸鸢套准" },
+      { "id": "reef", "label": "珊瑚套准" },
+      { "id": "signal", "label": "信号套准" }
+    ]
+  },
+  {
+    "id": "orbit",
+    "title": "离心试飞",
+    "description": "拉动发射矢量，比较不同速度与方向下的真实模拟轨迹。",
+    "prompt": "设定发射条件，预判探测器会怎样飞，再发射并验证猜测。",
+    "hash": "#orbit",
+    "options": [
+      { "id": "circle", "label": "近圆绕行" },
+      { "id": "ellipse", "label": "椭圆绕行" },
+      { "id": "escape", "label": "逃逸" },
+      { "id": "impact", "label": "撞入天体" }
+    ]
+  },
+  {
+    "id": "poll",
+    "title": "数据显影室",
+    "description": "移动两种方案的样本构成，追踪汇总结果何时会反转。",
+    "prompt": "对齐两个样本的新手比例，预判等权后的领先方案，再核对分组结果。",
+    "hash": "#poll",
+    "options": [{ "id": "completed", "label": "已还原等权比较" }]
+  },
+  {
+    "id": "tempo",
+    "title": "不同拍的两只钟",
+    "description": "沿着同一个周期比较两个声部，观察相位怎样改变同响的位置。",
+    "prompt": "用 3 对 4 的拍比保留全部拍点，移动内圈起点，使唯一同响落在第 9 格。",
+    "hash": "#tempo",
+    "options": [{ "id": "completed", "label": "第 9 格同响" }]
+  },
+  {
+    "id": "tide",
+    "title": "借地挡潮",
+    "description": "在河口修改地势与防护，观察上涨的海水会绕向哪里。",
+    "prompt": "用筑堤工具改造河口，再提高到至少 3 米潮位，让四间房保持干燥。",
+    "hash": "#tide",
+    "options": [{ "id": "completed", "label": "已通过高潮试验" }]
+  },
+  {
+    "id": "lexicon",
+    "title": "朱批之间",
+    "description": "在同一句文字里挪动标点，比较两种断句如何生成相反答复。",
+    "prompt": "调整停顿和问号的位置，分别印出两张意思相反的印样。",
+    "hash": "#lexicon",
+    "options": [{ "id": "completed", "label": "已印出两种读法" }]
+  },
+  {
+    "id": "scan",
+    "title": "别切开它",
+    "description": "转动扫描架，从不同方向采集投影，拼回密封样本的断面。",
+    "prompt": "为任选一个样本补齐半圈的投影，打开去模糊滤波并完成重建。",
+    "hash": "#scan",
+    "options": [
+      { "id": "ceramic", "label": "双孔陶片成像" },
+      { "id": "layers", "label": "三枚夹层成像" },
+      { "id": "ring", "label": "偏心环成像" }
+    ]
+  }
+]

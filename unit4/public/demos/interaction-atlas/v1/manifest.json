@@ -1,0 +1,115 @@
+[
+  {
+    "id": "refraction",
+    "title": "全反射实验室",
+    "description": "在示波器上比较入射光、折射光与反射光。",
+    "prompt": "选择一种介质组合，改变入射角，直到折射光消失。",
+    "hash": "#refraction",
+    "options": [
+      { "id": "glass-air", "label": "玻璃到空气发生全反射" },
+      { "id": "water-air", "label": "水到空气发生全反射" }
+    ]
+  },
+  {
+    "id": "argument",
+    "title": "论证剪贴台",
+    "description": "用教研会的阅读试行材料编出一段论证。",
+    "prompt": "将三张纸条放入主张、证据和推理槽位，再核对段落。",
+    "hash": "#argument",
+    "options": [
+      { "id": "first-check", "label": "首次核对通过" },
+      { "id": "revised", "label": "按核对反馈修订后通过" }
+    ]
+  },
+  {
+    "id": "fractions",
+    "title": "分数茶席",
+    "description": "用两只青白瓷盘对照分数所占的面积。",
+    "prompt": "重切右侧瓷盘，涂出与左盘一样大的蓝色面积。",
+    "hash": "#fractions",
+    "options": [
+      { "id": "four-sixths", "label": "用 4/6 配出等量" },
+      { "id": "six-ninths", "label": "用 6/9 配出等量" },
+      { "id": "eight-twelfths", "label": "用 8/12 配出等量" }
+    ]
+  },
+  {
+    "id": "strata",
+    "title": "土下年表",
+    "description": "从陶片上方和下方的两层沉积寻找定年线索。",
+    "prompt": "逐层发掘，翻查记录，再判断陶片的大致埋藏年代。",
+    "hash": "#strata",
+    "options": [
+      { "id": "dated", "label": "依据上下地层确定年代范围" }
+    ]
+  },
+  {
+    "id": "rhythm",
+    "title": "反拍机",
+    "description": "用节拍机试出拍手落在鼓点之间的效果。",
+    "prompt": "把四次拍手排在鼓点之间，按播放听听重音怎样移动。",
+    "hash": "#rhythm",
+    "options": [
+      { "id": "four-offbeats", "label": "四次拍手均落在反拍" }
+    ]
+  },
+  {
+    "id": "chance",
+    "title": "硬币客场",
+    "description": "在两种样本量下比较实际频率和 50% 的距离。",
+    "prompt": "让公平硬币各投 10 次和 1,000 次，比较结果并核对下面的判断。",
+    "hash": "#chance",
+    "options": [
+      { "id": "small", "label": "本轮 10 次更接近 50%" },
+      { "id": "large", "label": "本轮 1,000 次更接近 50%" },
+      { "id": "tie", "label": "本轮两场与 50% 等距" }
+    ]
+  },
+  {
+    "id": "web",
+    "title": "一池相连",
+    "description": "用池塘食物网观察种群减少产生的连带变化。",
+    "prompt": "先预测浮游动物的变化，再移除小鱼，沿箭头核对。",
+    "hash": "#web",
+    "options": [
+      { "id": "prediction-matched", "label": "观察结果与预测一致" },
+      { "id": "prediction-revised", "label": "观察结果与预测不同" },
+      { "id": "observed", "label": "直接观察到浮游动物增加" }
+    ]
+  },
+  {
+    "id": "light",
+    "title": "灯光合成场",
+    "description": "在剧场灯控台用红、绿、蓝三束光配色。",
+    "prompt": "选择下一幕的目标色，推亮三个通道，再核对配色。",
+    "hash": "#light",
+    "options": [
+      { "id": "amber", "label": "合成琥珀光" },
+      { "id": "ice-blue", "label": "合成冰蓝光" },
+      { "id": "lilac", "label": "合成淡紫光" }
+    ]
+  },
+  {
+    "id": "logic",
+    "title": "回路小机器人",
+    "description": "在像素地图上调试前进、转向与重复指令。",
+    "prompt": "编一串指令，让机器人带着两节电池抵达出口。",
+    "hash": "#logic",
+    "options": [
+      { "id": "basic", "label": "用前进和转向抵达出口" },
+      { "id": "repeat", "label": "用重复前进压缩程序并抵达出口" }
+    ]
+  },
+  {
+    "id": "shadow",
+    "title": "借一片影子",
+    "description": "切换轴测和俯视，观察塔楼影子怎样落在广场上。",
+    "prompt": "选择一座树池，调节太阳时和塔高，让整座树池进入阴影。",
+    "hash": "#shadow",
+    "options": [
+      { "id": "west", "label": "西侧树池完全进入阴影" },
+      { "id": "center", "label": "中庭树池完全进入阴影" },
+      { "id": "east", "label": "东侧树池完全进入阴影" }
+    ]
+  }
+]

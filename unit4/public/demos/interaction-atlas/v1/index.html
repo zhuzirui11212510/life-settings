@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ee">
+  <meta name="description" content="十个可以亲手操作的教学交互设计案例。">
+  <title>可操作的课 / Lessons in Motion</title>
+  <link rel="icon" href="assets/mark.png" type="image/png">
+  <link rel="stylesheet" href="atlas.css">
+  <link rel="stylesheet" href="first.css">
+  <link rel="stylesheet" href="middle.css">
+  <link rel="stylesheet" href="last.css">
+  <link rel="stylesheet" href="shadow.css">
+  <script defer src="/demo-bridge.js"></script>
+  <script defer src="atlas.js"></script>
+  <script defer src="first.js"></script>
+  <script defer src="middle.js"></script>
+  <script defer src="last.js"></script>
+  <script defer src="shadow.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">跳到主要内容</a>
+  <header class="site-head shell" id="top">
+    <a class="wordmark" href="#top" aria-label="可操作的课，首页">
+      <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span>可操作的课</span>
+    </a>
+    <nav aria-label="主导航">
+      <a href="#works">作品</a>
+      <a href="#about">关于</a>
+      <button type="button" class="index-button" id="show-index" aria-haspopup="dialog"><span class="index-icon" aria-hidden="true">⠿</span> 快速索引</button>
+    </nav>
+  </header>
+  <main id="content" tabindex="-1">
+    <div id="gallery">
+      <section class="hero shell" aria-labelledby="hero-title">
+        <div class="hero-type">
+          <div class="hero-meta"><span class="dot"></span> 教学交互设计作品集 <span class="meta-rule"></span></div>
+          <h1 id="hero-title" lang="en">Lessons<br>in motion<span>.</span></h1>
+          <p class="hero-caption">让知识进入手里</p>
+          <p class="hero-description">从折射光线到调度节拍，十件可以亲手操作的作品。选一个项目，看看你的动作会改变什么。</p>
+          <a href="#works" class="hero-cta">浏览十个作品 <span aria-hidden="true">↘</span></a>
+        </div>
+        <figure class="cover">
+          <img id="cover-image" width="1536" height="1024" alt="荧光橙透明圆环与钴蓝折纸在工作台上投下交叠的影子">
+          <figcaption><span lang="en">STUDIES IN FORM &amp; PLAY</span><span lang="en">INTERACTION DESIGN / 2026</span></figcaption>
+        </figure>
+      </section>
+      <section class="works shell" id="works" aria-labelledby="works-title">
+        <header class="works-head">
+          <div><span class="section-en" lang="en">Selected work</span><h2 id="works-title" tabindex="-1">作品索引</h2></div>
+          <div class="view-switch" role="group" aria-label="作品浏览方式">
+            <button type="button" data-view="grid" aria-pressed="true"><span aria-hidden="true">▦</span> 图集</button>
+            <button type="button" data-view="list" aria-pressed="false"><span aria-hidden="true">≡</span> 列表</button>
+          </div>
+        </header>
+        <div class="filter-bar">
+          <div class="filters" role="group" aria-label="按学科筛选">
+            <button type="button" data-filter="all" aria-pressed="true">全部</button>
+            <button type="button" data-filter="science" aria-pressed="false">自然与空间</button>
+            <button type="button" data-filter="math" aria-pressed="false">数学与计算</button>
+            <button type="button" data-filter="arts" aria-pressed="false">人文与艺术</button>
+          </div>
+          <span class="result-count" id="result-count" role="status"></span>
+        </div>
+        <div id="project-grid" class="project-grid"></div>
+        <noscript>请启用 JavaScript 来运行这些交互样例。</noscript>
+      </section>
+      <section class="about shell" id="about" aria-labelledby="about-title">
+        <div><span class="section-en" lang="en">About this collection</span><h2 id="about-title" tabindex="-1">关于展集</h2></div>
+        <div>
+          <p>十件作品各自有一套视觉语言。示波器的网格用来读光线的角度，考察手记的土层用来判断先后，剧场的灯光本身就是调色工具。</p>
+          <p>每个项目都可以反复尝试，项目下方也附有交互设计说明。</p>
+          <a href="#works" class="text-link">回到作品索引 <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+    </div>
+    <article id="case-view" class="case shell" hidden>
+      <h1 id="case-heading" class="visually-hidden" tabindex="-1"></h1>
+      <nav class="case-nav" aria-label="作品导航">
+        <a href="#works" class="text-link"><span aria-hidden="true">←</span> 作品索引</a>
+        <p id="case-number"></p>
+        <div class="case-arrows">
+          <a id="prev-case" aria-label="上一件作品" title="上一件作品">←</a>
+          <a id="next-case" aria-label="下一件作品" title="下一件作品">→</a>
+        </div>
+      </nav>
+      <div class="demo-stage" id="demo-stage"></div>
+      <p id="case-complete" class="case-complete" role="status"></p>
+      <section class="case-notes" aria-labelledby="case-notes-title">
+        <div><span class="section-en" lang="en">Design notes</span><h2 id="case-notes-title">设计拆解</h2></div>
+        <dl id="case-notes-list"></dl>
+      </section>
+      <a class="case-next" id="case-next">
+        <span><small>下一件作品</small><strong></strong></span><span class="case-next-arrow" aria-hidden="true">↗</span>
+      </a>
+    </article>
+  </main>
+  <footer class="site-foot shell">
+    <span lang="en">Lessons in Motion</span><a href="#top">返回首页 <span aria-hidden="true">↑</span></a>
+  </footer>
+  <dialog id="index-dialog" aria-labelledby="index-title">
+    <div class="dialog-head"><h2 id="index-title">快速索引</h2><form method="dialog"><button aria-label="关闭快速索引">×</button></form></div>
+    <nav id="index-links" aria-label="全部作品"></nav>
+  </dialog>
+</body>
+</html>

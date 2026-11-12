@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e5ebed">
+  <meta name="description" content="扭合、描线、剪开。用一张可以亲手操作的三维纸带，探索莫比乌斯带的接缝。">
+  <title>沿着纸带 / One Surface</title>
+  <link rel="icon" type="image/png" href="assets/mark.png">
+  <link rel="stylesheet" href="studio.css">
+  <script defer src="/demo-bridge.js"></script>
+  <script defer src="assets/three-r181.js"></script>
+  <script defer src="fallback.js"></script>
+  <script defer src="ribbon.js"></script>
+  <script defer src="lesson.js"></script>
+  <script defer src="studio.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#lesson-controls">跳到实验控制</a>
+  <header class="studio-header shell">
+    <a class="studio-brand" href="#top" aria-label="沿着纸带，回到顶部">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+      <span>沿着纸带 <small lang="en">One Surface</small></span>
+    </a>
+    <nav aria-label="实验台工具">
+      <button type="button" class="header-button" id="sound-button" aria-pressed="false"><span class="sound-glyph" aria-hidden="true"><i></i><i></i><i></i></span><span>声音关</span></button>
+      <button type="button" class="header-button" data-guide><span aria-hidden="true">◇</span> 接缝原理</button>
+      <button type="button" class="header-button focus-button" data-focus aria-pressed="false"><span aria-hidden="true">⛶</span> <span data-focus-label>展映</span></button>
+    </nav>
+  </header>
+  <main class="shell" id="top">
+    <div class="workbench">
+      <section class="display" aria-labelledby="main-title">
+        <div class="display-geometry" aria-hidden="true"></div>
+        <div id="ribbon-stage" class="ribbon-stage" data-twists="1" role="region" aria-label="可转动的三维纸带"></div>
+        <header class="display-mast">
+          <p>莫比乌斯纸带实验</p>
+          <h1 id="main-title">沿着纸带<span>。</span></h1>
+          <span lang="en">One Surface</span>
+        </header>
+        <div class="specimen">
+          <span>纸带状态</span>
+          <strong id="lesson-meta">一面 · 一条边</strong>
+        </div>
+        <div class="display-bottom">
+          <div class="view-rail">
+            <div class="view-group" role="group" aria-label="观察角度">
+              <button type="button" data-view="default" aria-pressed="true" title="斜视">斜视</button>
+              <button type="button" data-view="top" aria-pressed="false" title="俯视">俯视</button>
+              <button type="button" data-view="side" aria-pressed="false" title="侧视">侧视</button>
+            </div>
+            <div class="view-group" role="group" aria-label="观察辅助">
+              <button type="button" data-display="showSeam" aria-pressed="true" title="显示接缝">接缝</button>
+              <button type="button" data-display="showGrid" aria-pressed="false" title="显示参考网格">网格</button>
+              <button type="button" data-reset-view aria-label="复位视角" title="复位视角">↺</button>
+            </div>
+          </div>
+          <p class="display-hint"><span>拖动旋转</span><span>滚轮或捏合缩放</span></p>
+        </div>
+        <button type="button" class="focus-exit" data-focus aria-pressed="false"><span aria-hidden="true">⛶</span> <span data-focus-label>展映</span></button>
+      </section>
+      <aside class="controls" id="lesson-controls" aria-label="纸带实验控制" tabindex="-1">
+        <noscript><p>请启用 JavaScript 以操作纸带。</p></noscript>
+      </aside>
+    </div>
+    <section class="observation" aria-label="观察记录">
+      <div class="observation-label"><span aria-hidden="true">✳</span><strong>观察记录</strong></div>
+      <p id="lesson-live" role="status"></p>
+      <div id="lesson-meter" class="observation-meter" aria-hidden="true"><i></i></div>
+      <p id="lesson-result"></p>
+    </section>
+  </main>
+  <footer class="studio-footer shell">
+    <span class="keyboard-hint"><kbd>1</kbd>–<kbd>3</kbd> 切换步骤 <span>／</span> <kbd>空格</kbd> 播放或暂停 <span>／</span> <kbd>R</kbd> 复位视角</span>
+    <div><button type="button" data-reset-lab>复原实验 ↺</button><button type="button" data-guide>打开接缝图 ↗</button></div>
+  </footer>
+  <dialog id="guide" aria-labelledby="guide-title">
+    <header class="guide-head">
+      <div><p>纸带的展开图</p><h2 id="guide-title">接缝决定你走到哪里</h2></div>
+      <form method="dialog"><button class="guide-close" aria-label="关闭接缝原理">×</button></form>
+    </header>
+    <div class="guide-content">
+      <div class="guide-tabs" role="group" aria-label="比较两种接法">
+        <button type="button" data-join="even" aria-pressed="false">偶数次半扭转</button>
+        <button type="button" data-join="odd" aria-pressed="true">奇数次半扭转</button>
+      </div>
+      <figure class="join-figure">
+        <canvas id="join-canvas" role="img" aria-label="展开纸带，显示两端如何接起来，以及经过接缝的路线。"></canvas>
+        <figcaption id="join-caption"></figcaption>
+      </figure>
+      <button class="guide-replay" type="button" id="join-replay">沿路线走一圈</button>
+      <div class="guide-text">
+        <p>沿纸带边缘走，奇数次半扭转会让你在接缝处走到原来的另一条长边，要绕两圈才能回到起点。偶数次半扭转把同一条边接回自身。</p>
+        <p>剪开也遵循同一接法。奇数次半扭转的中心剪把两条半宽纸带接成一条长环。偏心剪还会留下一条较窄的莫比乌斯带，两环套在一起。纸带条数按连通性计数。</p>
+        <p class="guide-sources"><a href="https://legacy-www.math.harvard.edu/~knill/teaching/math21a2019/exhibits/moebius/index.html" target="_blank" rel="noreferrer">中心剪实验 ↗</a><a href="https://learn.k20center.ou.edu/lesson/1372" target="_blank" rel="noreferrer">偏心剪实验 ↗</a></p>
+      </div>
+    </div>
+  </dialog>
+</body>
+</html>
