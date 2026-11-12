@@ -1,8 +1,11 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { homedir, networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { gzipSync } from 'node:zlib';
+import { demoBundles } from './demo-catalog.mjs';
 import { getLesson, listLessons, viewStep } from './lessons.mjs';
 import { createStore } from './store.mjs';
 
@@ -16,6 +19,7 @@ const assets = new Map([
   ['/app.js', ['public/app.js', 'text/javascript; charset=utf-8']],
   ['/connection.js', ['public/connection.js', 'text/javascript; charset=utf-8']],
   ['/view.js', ['public/view.js', 'text/javascript; charset=utf-8']],
+  ['/demo-bridge.js', ['public/demo-bridge.js', 'text/javascript; charset=utf-8']],
   ['/qr.js', ['../public/qr.js', 'text/javascript; charset=utf-8']],
   ['/QR-LICENSE.txt', ['../public/QR-LICENSE.txt', 'text/plain; charset=utf-8']],
 ]);
@@ -24,6 +28,70 @@ const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
 };
+const demoSecurityHeaders = {
+  ...securityHeaders,
+  'Content-Security-Policy': securityHeaders['Content-Security-Policy'].replace("frame-ancestors 'none'", "frame-ancestors 'self'"),
+};
+const demoTypes = new Map([
+  ['.html', 'text/html; charset=utf-8'],
+  ['.css', 'text/css; charset=utf-8'],
+  ['.js', 'text/javascript; charset=utf-8'],
+  ['.png', 'image/png'],
+  ['.webp', 'image/webp'],
+  ['.svg', 'image/svg+xml'],
+  ['.ttf', 'font/ttf'],
+  ['.woff2', 'font/woff2'],
+  ['.txt', 'text/plain; charset=utf-8'],
+]);
+const demoCache = new Map();
+
+function demoAsset(pathname) {
+  if (demoCache.has(pathname)) return demoCache.get(pathname);
+  const match = /^\/demos\/([a-z0-9-]+\/v[1-9][0-9]*)\/((?:assets\/)?[a-zA-Z0-9][a-zA-Z0-9_.-]*)$/.exec(pathname);
+  if (!match) return null;
+  const [, bundle, relative] = match;
+  const directory = demoBundles.get(bundle);
+  const type = demoTypes.get(path.extname(relative));
+  if (!directory || !type || (type.startsWith('text/html') && relative !== 'index.html')) return null;
+  let bytes;
+  try {
+    bytes = readFileSync(new URL(relative, directory));
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'EISDIR') return null;
+    throw error;
+  }
+  const etag = `W/"${createHash('sha256').update(bytes).digest('hex')}"`;
+  const gzip = bytes.length > 1024 && (type.startsWith('text/') || type === 'font/ttf') ? gzipSync(bytes) : null;
+  const asset = { type, bytes, gzip, etag };
+  demoCache.set(pathname, asset);
+  return asset;
+}
+
+function serveDemo(request, response, pathname) {
+  method(request, response, ['GET', 'HEAD']);
+  const asset = demoAsset(pathname);
+  if (!asset) fail(404, 'not_found', '没有找到该作品资源。');
+  const { type, bytes, gzip, etag } = asset;
+  const headers = {
+    ...demoSecurityHeaders,
+    'Content-Type': type,
+    'Cache-Control': 'public, max-age=31536000, immutable',
+    ETag: etag,
+  };
+  if (gzip) headers.Vary = 'Accept-Encoding';
+  if (request.headers['if-none-match']?.split(/\s*,\s*/).some(value => value === etag || value === '*')) {
+    response.writeHead(304, headers);
+    return response.end();
+  }
+  const acceptsGzip = request.headers['accept-encoding']?.split(',').some(entry => {
+    const [coding, weight] = entry.trim().toLowerCase().split(/\s*;\s*/, 2);
+    return coding === 'gzip' && (weight === undefined || Number(weight.replace(/^q=/, '')) > 0);
+  });
+  const payload = acceptsGzip && gzip ? gzip : bytes;
+  if (payload === gzip) headers['Content-Encoding'] = 'gzip';
+  response.writeHead(200, { ...headers, 'Content-Length': payload.length });
+  return response.end(request.method === 'HEAD' ? undefined : payload);
+}
 
 function fail(status, code, message) {
   throw Object.assign(new Error(message), { status, code });
@@ -148,6 +216,7 @@ export function createClassroomServer({ dataDir = defaultDataDir, readOnly = fal
   const server = createServer({ requestTimeout: 15_000, headersTimeout: 10_000 }, async (request, response) => {
     try {
       const pathname = new URL(request.url, 'http://localhost').pathname;
+      if (pathname.startsWith('/demos/')) return serveDemo(request, response, pathname);
       const asset = assets.get(pathname);
       if (asset) {
         method(request, response, ['GET', 'HEAD']);

@@ -78,6 +78,35 @@ function updateUrl(query) {
   history.replaceState(null, '', '/?' + new URLSearchParams(query));
 }
 
+function replaceContent(html) {
+  const currentFrame = main.querySelector('[data-demo-key]');
+  if (!currentFrame) {
+    main.innerHTML = html;
+    return;
+  }
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  const newFrame = template.content.querySelector('[data-demo-key]');
+  if (currentFrame.dataset.demoKey !== newFrame?.dataset.demoKey) {
+    main.replaceChildren(template.content);
+    return;
+  }
+  // Removing or moving an iframe reloads its document. Keep its ancestors mounted
+  // and update the siblings that contain progress, receipts, and host controls.
+  let current = currentFrame;
+  let replacement = newFrame;
+  while (current !== main) {
+    const siblings = Array.from(replacement.parentNode.childNodes);
+    const index = siblings.indexOf(replacement);
+    while (current.previousSibling) current.previousSibling.remove();
+    while (current.nextSibling) current.nextSibling.remove();
+    current.before(...siblings.slice(0, index));
+    current.after(...siblings.slice(index + 1));
+    current = current.parentNode;
+    replacement = replacement.parentNode;
+  }
+}
+
 function replace(html) {
   if (html === renderKey) return;
   renderKey = html;
@@ -87,7 +116,7 @@ function replace(html) {
   const drafts = Array.from(main.querySelectorAll('[data-edited][id]'), (element) =>
     [element.id, element.type === 'checkbox' ? element.checked : element.value]);
   const details = Array.from(main.querySelectorAll('details[open][id]'), (element) => element.id);
-  main.innerHTML = html;
+  replaceContent(html);
   for (const [id, value] of drafts) {
     const element = document.getElementById(id);
     if (!element) continue;
@@ -102,7 +131,7 @@ function replace(html) {
     if (element) element.open = true;
   }
   const next = focusId && document.getElementById(focusId);
-  if (next && !next.disabled) {
+  if (next && next !== active && !next.disabled) {
     next.focus({ preventScroll: true });
     if (caret) next.setSelectionRange(...caret);
   }
@@ -353,6 +382,8 @@ async function sendAnswer() {
 
 function submitAnswer() {
   if (busy || pendingAnswer || state.run?.status !== 'open' || !choice || state.readOnly) return;
+  if (state.step?.module === 'demo@1' && activeDemoFrame()?.contentWindow.Unit4Demo?.result !== choice) return;
+  if (!state.step?.config?.options?.some(({ id }) => id === choice)) return;
   pendingAnswer = { requestId: randomHex(16), runId: state.run.id, value: choice };
   remember(roomCache('answer'), pendingAnswer);
   sendAnswer();
@@ -418,6 +449,55 @@ main.addEventListener('input', (event) => {
   if (event.target.id && !event.target.readOnly) event.target.dataset.edited = '';
 });
 
+main.addEventListener('load', (event) => {
+  const frame = event.target;
+  if (frame.matches?.('iframe[data-demo-key]')) {
+    frame.contentWindow.postMessage({ type: 'unit4-demo-ready' }, location.origin);
+  }
+}, true);
+
+function activeDemoFrame() {
+  const frame = document.getElementById('demo-frame');
+  if (!frame) return null;
+  try {
+    const expected = new URL(frame.src);
+    const active = frame.contentWindow.location;
+    if (active.pathname === expected.pathname && active.search === expected.search && (!expected.hash || active.hash === expected.hash)) return frame;
+  } catch {
+    // The frame may have followed an external link.
+  }
+  return null;
+}
+
+window.addEventListener('message', (event) => {
+  if (event.origin !== location.origin) return;
+  const frame = activeDemoFrame();
+  if (!frame || event.source !== frame.contentWindow) return;
+  if (event.data?.type === 'unit4-demo-height' && Number.isFinite(event.data.height)) {
+    frame.style.height = Math.ceil(Math.max(260, Math.min(event.data.height + 2, 3200))) + 'px';
+    return;
+  }
+  if (event.data?.type !== 'unit4-demo-result') return;
+  const step = view === 'preview' ? previewStep : state?.step;
+  if (step?.module !== 'demo@1') return;
+  const value = event.data.value;
+  if (value !== frame.contentWindow.Unit4Demo?.result) return;
+  if (value !== null && !step.config.options.some(({ id }) => id === value)) return;
+  const next = value ?? '';
+  if (choice !== next) {
+    choice = next;
+    render();
+  }
+});
+
+function openPreviewStep(id) {
+  const next = previewLesson?.steps.find((step) => step.id === id);
+  if (!next || previewStep === next) return;
+  previewStep = next;
+  choice = '';
+  render();
+}
+
 main.addEventListener('submit', (event) => {
   event.preventDefault();
   if (busy) return;
@@ -433,6 +513,14 @@ main.addEventListener('submit', (event) => {
     case 'create': createRoom(fields); break;
     case 'restore': restoreRoom(fields); break;
     case 'join': joinRoom(fields.get('seatKey') || seat); break;
+    case 'preview-step': openPreviewStep(fields.get('stepId')); break;
+    case 'select-demo':
+      command('select-demo', {
+        stepId: fields.get('stepId'),
+        expectedStep: state.step?.id ?? null,
+        expectedRun: state.run?.id ?? null
+      });
+      break;
     case 'address': {
       const origin = inviteOrigin(fields.get('address'));
       if (!origin) return setNotice('请输入有效的 HTTP 或 HTTPS 地址。', 'error');
@@ -475,15 +563,15 @@ main.addEventListener('click', (event) => {
     if (data.action === 'issue-seat') fields.seatKey = randomHex(32);
     if (data.run) fields.runId = data.run;
     if (['advance', 'skip'].includes(data.action)) fields.stepId = data.step || null;
+    if (data.action === 'finish') {
+      fields.expectedStep = state.step?.id ?? null;
+      fields.expectedRun = state.run?.id ?? null;
+    }
     command(data.action, fields);
   } else if ('copy' in data) copy(data.copy);
   else if ('refresh' in data) feed?.refresh();
   else if ('export' in data) exportHost();
-  else if ('previewStep' in data) {
-    previewStep = previewLesson.steps.find(({ id }) => id === data.previewStep);
-    choice = '';
-    render();
-  }
+  else if ('previewStep' in data) openPreviewStep(data.previewStep);
 });
 
 async function boot() {

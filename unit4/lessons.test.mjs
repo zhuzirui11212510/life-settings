@@ -2,71 +2,64 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getLesson, listLessons, summarizeAnswers, validateAnswer, validateLesson, viewStep } from './lessons.mjs';
 
-test('the catalog exposes bundled lesson versions and protects the published configs', () => {
+test('the default classroom includes all 21 original demo routes', () => {
   const entries = listLessons();
-  assert.equal(entries[0].id, getLesson().id);
-  assert.ok(entries.some(({ id }) => id === 'reading-2-workshop'));
-  for (const { id, title, version } of entries) {
-    const lesson = getLesson(id, version);
-    assert.equal(lesson.title, title);
+  assert.equal(entries[0].id, 'demo-classroom');
+  const combined = getLesson();
+  const suites = ['one-surface', 'live-stages', 'interaction-atlas'];
+  assert.deepEqual(new Set(entries.slice(1).map(({ id }) => id)), new Set(suites));
+  const routes = new Set();
+  for (const id of suites) {
+    const lesson = getLesson(id, '1.0.0');
     assert.deepEqual(validateLesson(lesson), lesson);
-  }
-  const copy = getLesson();
-  copy.steps.length = 0;
-  assert.ok(getLesson().steps.length > 0);
-  assert.equal(getLesson('reading-2', '999.0.0'), null);
-});
-
-test('lesson validation checks pinned modules, option IDs, and earlier result sources', () => {
-  const wrongModule = getLesson();
-  wrongModule.steps[1].module = 'framing@2';
-  assert.throws(() => validateLesson(wrongModule), /module is not supported/);
-
-  const duplicateOption = getLesson();
-  duplicateOption.steps[1].config.options[1].id = 'care';
-  assert.throws(() => validateLesson(duplicateOption), /options\[1\]\.id is duplicated/);
-
-  const lateSource = getLesson();
-  lateSource.steps[2].sourceStepId = 'exit-ticket';
-  assert.throws(() => validateLesson(lateSource), /earlier activity/);
-
-  const missingArtifact = getLesson();
-  delete missingArtifact.steps[1].config.options[0].artifact;
-  assert.throws(() => validateLesson(missingArtifact), /artifact must be an object/);
-});
-
-test('teacher-only content and early answers stay out of public step views', () => {
-  const lesson = getLesson();
-  const ticket = lesson.steps.find(({ id }) => id === 'exit-ticket');
-  assert.equal(viewStep(ticket, { role: 'host', phase: 'open' }).teacher.correctOptionId, 'reviews');
-  for (const role of ['student', 'screen']) {
-    for (const phase of ['preview', 'open', 'locked', 'aborted']) {
-      const view = viewStep(ticket, { role, phase });
-      assert.ok(!Object.hasOwn(view, 'teacher'));
-      assert.ok(!Object.hasOwn(view, 'answer'));
+    for (const step of lesson.steps) {
+      assert.equal(step.module, 'demo@1');
+      assert.ok(step.config.demoUrl.startsWith(`/demos/${id}/v1/`));
+      assert.ok(!routes.has(step.config.demoUrl));
+      routes.add(step.config.demoUrl);
     }
-    const revealed = viewStep(ticket, { role, phase: 'revealed' });
-    assert.deepEqual(revealed.answer, {
-      correctOptionId: 'reviews',
-      explanation: ticket.teacher.explanation,
-    });
-    assert.ok(!Object.hasOwn(revealed, 'teacher'));
   }
-  ticket.config.correctOptionId = 'reviews';
-  assert.throws(() => validateLesson(lesson), /config\.correctOptionId is not supported/);
+  assert.equal(routes.size, 21);
+  assert.deepEqual(new Set(combined.steps.map(step => step.config.demoUrl)), routes);
+  combined.steps.length = 0;
+  assert.equal(getLesson().steps.length, 21);
+  assert.equal(getLesson('one-surface', '999.0.0'), null);
 });
 
-test('summary uses the pinned option order and includes unselected options', () => {
-  const step = getLesson().steps.find(({ id }) => id === 'book-review');
-  assert.equal(validateAnswer(step, 'care'), 'care');
-  assert.throws(() => validateAnswer(step, 'reviews'), { status: 400, code: 'INVALID_ANSWER' });
-  assert.throws(() => validateAnswer(step, { id: 'care' }), { code: 'INVALID_ANSWER' });
-  assert.deepEqual(summarizeAnswers(step, ['action', 'action']), {
+test('lesson validation checks versioned demo paths and outcome IDs', () => {
+  const lesson = getLesson('one-surface');
+  const config = lesson.steps[0].config;
+  const validUrl = config.demoUrl;
+  for (const badUrl of ['https://example.invalid/demo', '//example.invalid/demo', '/demos/one-surface/latest/index.html?classroom=1']) {
+    config.demoUrl = badUrl;
+    assert.throws(() => validateLesson(lesson), /must name a versioned classroom demo/);
+  }
+  config.demoUrl = validUrl;
+  config.options[1].id = config.options[0].id;
+  assert.throws(() => validateLesson(lesson), /options\[1\]\.id is duplicated/);
+});
+
+test('host-only notes stay out of the public demo views', () => {
+  const step = getLesson('one-surface').steps[0];
+  step.teacher = { note: 'Private facilitator note' };
+  assert.equal(viewStep(step, { role: 'host', phase: 'open' }).teacher.note, step.teacher.note);
+  for (const role of ['student', 'screen']) {
+    for (const phase of ['preview', 'open', 'locked', 'aborted', 'revealed']) {
+      const view = viewStep(step, { role, phase });
+      assert.equal(view.config.demoUrl, step.config.demoUrl);
+      assert.ok(!Object.hasOwn(view, 'teacher'));
+    }
+  }
+});
+
+test('summary uses the pinned outcome order and includes zero-count outcomes', () => {
+  const step = getLesson('one-surface').steps[0];
+  assert.equal(validateAnswer(step, 'single-ring'), 'single-ring');
+  assert.throws(() => validateAnswer(step, 'glass-air'), { status: 400, code: 'INVALID_ANSWER' });
+  assert.throws(() => validateAnswer(step, { id: 'single-ring' }), { code: 'INVALID_ANSWER' });
+  assert.deepEqual(summarizeAnswers(step, ['single-ring', 'single-ring']), {
     count: 2,
-    choices: [
-      { id: 'care', label: 'Family care', count: 0 },
-      { id: 'action', label: 'Public action', count: 2 },
-    ],
+    choices: step.config.options.map(option => ({ ...option, count: option.id === 'single-ring' ? 2 : 0 })),
   });
   assert.equal(summarizeAnswers(step, []).count, 0);
 });

@@ -1,5 +1,5 @@
 import { createHash, randomInt, randomUUID } from 'node:crypto';
-import { getLesson, summarizeAnswers, validateAnswer, viewStep } from './lessons.mjs';
+import { defaultLessonId, getLesson, summarizeAnswers, validateAnswer, viewStep } from './lessons.mjs';
 import { openClassroomDatabase } from './schema.mjs';
 
 const ROOM_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -125,7 +125,7 @@ export function createStore({ databasePath, readOnly = false }) {
     return get('UPDATE rooms SET revision = revision + 1 WHERE code = ? RETURNING revision', code).revision;
   }
 
-  function createRoom({ lessonId = 'reading-2', lottery = false, token }) {
+  function createRoom({ lessonId = defaultLessonId, lottery = false, token }) {
     const hostHash = requireSecret(token, '主持凭证');
     if (typeof lessonId !== 'string' || typeof lottery !== 'boolean') {
       fail(400, 'INVALID_ROOM', '教案或抽奖设置无效。');
@@ -277,6 +277,7 @@ export function createStore({ databasePath, readOnly = false }) {
         result.participant = { number, receipt: receipt(answer) };
       }
       if (role === 'host') {
+        result.demoSteps = lesson.steps.filter(step => step.module === 'demo@1').map(({ id, title }) => ({ id, title }));
         result.roster = rosterFor(room.code);
         lottery.eligibleCount = decode(room.frozen_pool)?.length ?? result.roster.filter(seat => seat.eligible).length;
         result.runs = all('SELECT * FROM runs WHERE room = ? ORDER BY step_index, attempt', room.code)
@@ -346,9 +347,35 @@ export function createStore({ databasePath, readOnly = false }) {
     };
   }
 
-  function moveStep(room, lesson, run, { action, stepId }) {
+  function finishRoom(code) {
+    write('UPDATE rooms SET step_index = NULL, active_run = NULL, discussion = NULL, finished = 1 WHERE code = ?', code);
+    return {};
+  }
+
+  function enterStep(room, lesson, index) {
+    const step = lesson.steps[index];
+    const runId = step.type === 'activity' ? startRun(room.code, index) : null;
+    const binding = step.type === 'discussion' ? discussionBinding(room, step, lesson) : null;
+    write(`
+      UPDATE rooms SET step_index = ?, next_index = ?, active_run = ?, discussion = ?
+      WHERE code = ?
+    `, index, index + 1, runId, binding ? encode(binding) : null, room.code);
+    // Keep the selected source in the receipt after the current step moves on.
+    return step.type === 'discussion' ? { stepId: step.id, runId, binding } : { stepId: step.id, runId };
+  }
+
+  function moveStep(room, lesson, run, { action, stepId, expectedStep, expectedRun }) {
     if (room.finished || run?.status === 'open') {
       fail(409, 'INVALID_PHASE', '请先结束当前活动，再切换环节。');
+    }
+    if (action === 'select-demo' || action === 'finish') {
+      if (expectedStep !== (lesson.steps[room.step_index]?.id ?? null) || expectedRun !== (run?.id ?? null)) {
+        fail(409, 'STALE_STEP', '课堂环节已变化，请刷新主持台。');
+      }
+      if (action === 'finish') return finishRoom(room.code);
+      const index = lesson.steps.findIndex(step => step.id === stepId && step.module === 'demo@1');
+      if (index < 0) fail(400, 'DEMO_NOT_FOUND', '请选择本场的互动作品。');
+      return enterStep(room, lesson, index);
     }
     const next = lesson.steps[room.next_index];
     if (stepId !== (next?.id ?? null)) fail(409, 'STALE_STEP', '课堂环节已变化，请刷新主持台。');
@@ -357,18 +384,7 @@ export function createStore({ databasePath, readOnly = false }) {
       write('UPDATE rooms SET next_index = next_index + 1 WHERE code = ?', room.code);
       return { stepId };
     }
-    if (!next) {
-      write('UPDATE rooms SET step_index = NULL, active_run = NULL, discussion = NULL, finished = 1 WHERE code = ?', room.code);
-      return {};
-    }
-    const runId = next.type === 'activity' ? startRun(room.code, room.next_index) : null;
-    const binding = next.type === 'discussion' ? discussionBinding(room, next, lesson) : null;
-    write(`
-      UPDATE rooms SET step_index = next_index, next_index = next_index + 1, active_run = ?, discussion = ?
-      WHERE code = ?
-    `, runId, binding ? encode(binding) : null, room.code);
-    // Keep the selected source in the receipt after the current step moves on.
-    return next.type === 'discussion' ? { stepId, runId, binding } : { stepId, runId };
+    return next ? enterStep(room, lesson, room.next_index) : finishRoom(room.code);
   }
 
   function changeRun(room, lesson, run, { action, runId }) {
@@ -490,6 +506,8 @@ export function createStore({ databasePath, readOnly = false }) {
       let result;
       switch (action) {
         case 'advance':
+        case 'finish':
+        case 'select-demo':
         case 'skip': result = moveStep(room, lesson, run, body); break;
         case 'lock':
         case 'reveal':

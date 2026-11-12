@@ -28,8 +28,8 @@ function heading(title, line = '') {
 
 export function landing() {
   return `<section class="intro stack">
-    <h1>书评里，<br>谁被看见了？</h1>
-    <p class="copy">读同一段材料，做一张自己的书评头版。全班揭晓后，再讨论样本能支持怎样的判断。</p>
+    <h1>把互动作品<br>带进课堂</h1>
+    <p class="copy">加入房间，跟随主持打开作品。操作结束后，把你实际观察到的结果交给课堂。</p>
     <form data-form="find" class="row">
       <label for="find-room">房间码</label>
       <input class="field-short" id="find-room" name="code" autocomplete="off" autocapitalize="characters" maxlength="6" required>
@@ -43,11 +43,11 @@ export function landing() {
 }
 
 export function hostEntry({ lessons, busy, pending, code }) {
-  return `<section class="narrow stack">${heading('主持台', code ? '创建或恢复一间课堂。' : '选定教案后开房，再把学生入口发给全班。')}
+  return `<section class="narrow stack">${heading('主持台', code ? '创建或恢复一间课堂。' : '开房后，把学生入口发给全班。')}
     <form class="panel" data-form="create">
       ${pending ? `<p>上一条开房请求待确认。重试会找回同一间课堂。</p>
         <button type="submit"${disable(busy)}>重试开房</button>` : `
-        <label class="field-wide">教案
+        <label class="field-wide">可用作品
           <select id="lesson" name="lessonId" required${disable(busy)}>
             ${lessons.map((lesson) => `<option value="${h(lesson.id)}">${h(lesson.title)} (${h(lesson.version)})</option>`).join('')}
           </select>
@@ -143,13 +143,50 @@ function artifact(option) {
   </figure>`;
 }
 
+function activityOutcome(step, run, language) {
+  const options = step.config.options;
+  const answer = step.answer;
+  const correct = options.find(({ id }) => id === answer?.correctOptionId);
+  return `${run?.status === 'revealed' && run.counts ? results('线上结果', fromCounts(options, run.counts), run.count) : ''}
+    ${paperResults(options, run?.paperCounts)}
+    ${answer?.explanation || correct ? `<section class="stack">
+      <h2>揭晓讲解</h2>${correct ? `<p lang="${language}">${h(correct.label)}</p>` : ''}
+      ${answer?.explanation ? `<p>${h(answer.explanation)}</p>` : ''}
+    </section>` : ''}`;
+}
+
+function demoView(step, { view, run, receipt, choice, pending, busy, readOnly }) {
+  const { body, prompt, demoUrl, options } = step.config;
+  const interactive = view === 'preview' || (view === 'student' && run?.status === 'open' && !readOnly);
+  const pendingValue = pending?.runId === run?.id ? pending?.value : null;
+  const selected = options.find(({ id }) => id === (receipt?.value ?? pendingValue ?? choice));
+  const canSubmit = view === 'student' && interactive && !receipt && !pending;
+  const source = new URL(demoUrl, location.origin);
+  if (source.origin !== location.origin || !source.pathname.startsWith('/demos/')) return '';
+  source.searchParams.delete('classroom');
+  const standalone = source.href;
+  source.searchParams.set('classroom', '1');
+  const key = [run?.id || step.id, source.href].join(':');
+  const response = `${receipt ? '<p class="receipt" role="status">已收到你的成品。</p>' : ''}
+    ${selected ? `<p class="demo-observation" role="status">本次结果 <strong>${h(selected.label)}</strong></p>` : ''}
+    ${canSubmit ? `<button type="button" id="submit-answer" data-submit${disable(busy || !selected)}>提交本次结果</button>
+      ${selected ? '' : '<small>完成作品里的操作后可提交。</small>'}` : ''}`;
+  const question = `<p class="copy">${h(body)}</p><p class="prompt">${h(prompt)}</p>`;
+  const outcome = activityOutcome(step, run, 'zh-CN');
+  const content = interactive ? `
+    <iframe id="demo-frame" class="demo-frame" data-demo-key="${h(key)}" src="${h(source.href)}" title="${h(step.title)}"></iframe>
+    <div class="demo-response">${response}</div>`
+    : `${response}${view === 'screen' || view === 'host' ? `<a href="${h(standalone)}" target="_blank" rel="noopener">${view === 'screen' ? '打开全屏演示' : '打开作品预览'}</a>` : ''}`;
+  return view === 'screen' && run?.status === 'revealed'
+    ? `${outcome}${content}<details id="revealed-question"><summary>查看操作说明</summary><div class="stack">${question}</div></details>`
+    : question + content + outcome;
+}
+
 function activityView(step, { view, run, receipt, choice, pending, busy, readOnly }) {
   const options = step.config?.options || [];
   const selected = receipt?.value ?? (pending && pending.runId === run?.id ? pending.value : choice);
   const selectable = view === 'preview' || (view === 'student' && run?.status === 'open' && !readOnly && !receipt && !pending);
   const option = options.find(({ id }) => id === selected);
-  const answer = step.answer;
-  const correct = options.find(({ id }) => id === answer?.correctOptionId);
   const question = `${copyBlock(step.config)}
     <ul class="choices">${options.map(({ id, label }) => `<li>
       ${selectable ? `<button type="button" id="choice-${h(id)}" class="choice" lang="en" data-choice="${h(id)}"
@@ -159,12 +196,7 @@ function activityView(step, { view, run, receipt, choice, pending, busy, readOnl
     ${view === 'student' && receipt ? '<p class="receipt" role="status">已收到你的成品。</p>' : ''}
     ${selectable && view === 'student' ? `<button type="button" id="submit-answer" data-submit${disable(busy || !option)}>提交最终选择</button>
       <small>提交前可以试其他选项。每轮只收一份最终选择。</small>` : ''}`;
-  const outcome = `${run?.status === 'revealed' && run.counts ? results('线上结果', fromCounts(options, run.counts), run.count) : ''}
-    ${paperResults(options, run?.paperCounts)}
-    ${answer?.explanation || correct ? `<section class="stack">
-      <h2>揭晓讲解</h2>${correct ? `<p lang="en">${h(correct.label)}</p>` : ''}
-      ${answer?.explanation ? `<p>${h(answer.explanation)}</p>` : ''}
-    </section>` : ''}`;
+  const outcome = activityOutcome(step, run, 'en');
   return view === 'screen' && run?.status === 'revealed'
     ? `${outcome}<details id="revealed-question"><summary>查看原题</summary><div class="stack">${question}</div></details>`
     : question + outcome;
@@ -172,6 +204,7 @@ function activityView(step, { view, run, receipt, choice, pending, busy, readOnl
 
 function stepView(step, context) {
   if (!step) return '<p>等同学入场后，主持会开启本课的第一环节。</p>';
+  if (step.module === 'demo@1') return demoView(step, context);
   if (step.type === 'activity') return activityView(step, context);
   if (step.type === 'briefing') return copyBlock(step.config);
   const online = step.discussion;
@@ -184,7 +217,7 @@ function stepView(step, context) {
 
 const actions = {
   advance: '开始下一环节', skip: '跳过下一环节', lock: '锁定作答', reveal: '揭晓结果', abort: '中止线上轮次',
-  reopen: '重新开放新一轮', 'freeze-draw': '冻结抽奖名单'
+  reopen: '重新开放新一轮', finish: '结束本场课堂', 'freeze-draw': '冻结抽奖名单'
 };
 
 function actionButton(action, { runId, stepId, label = actions[action], secondary = false, disabled = false } = {}) {
@@ -194,24 +227,34 @@ function actionButton(action, { runId, stepId, label = actions[action], secondar
 }
 
 function hostControls(state, disabled) {
-  const { step, run, nextStep, finished } = state;
+  const { step, run, nextStep, finished, demoSteps } = state;
   const phase = run?.status;
+  const chooseDemo = demoSteps?.length && !finished && phase !== 'open';
   return `<section class="panel">
     <h2>课堂控制</h2>
-    ${nextStep ? `<p class="compact">下一环节 <strong>${h(nextStep.title)}</strong></p>` : ''}
+    ${chooseDemo ? `<form data-form="select-demo">
+      <label class="field-wide">选择互动作品
+        <select id="demo-select" name="stepId" required${disable(disabled)}>
+          ${demoSteps.map(({ id, title }) => `<option value="${h(id)}"${id === nextStep?.id ? ' selected' : ''}>${h(title)}</option>`).join('')}
+        </select>
+      </label>
+      <button type="submit"${disable(disabled)}>发起所选作品</button>
+    </form>` : ''}
+    ${nextStep && !demoSteps?.length ? `<p class="compact">下一环节 <strong>${h(nextStep.title)}</strong></p>` : ''}
     <div class="actions">
       ${phase === 'open' ? actionButton('lock', { runId: run.id, disabled }) : ''}
       ${phase === 'open' || phase === 'locked' ? actionButton('abort', { runId: run.id, disabled, secondary: true }) : ''}
       ${phase === 'locked' ? actionButton('reveal', { runId: run.id, disabled }) : ''}
       ${phase && phase !== 'open' && !finished ? actionButton('reopen', { runId: run.id, disabled, secondary: true }) : ''}
-      ${!finished && phase !== 'open' ? actionButton('advance', {
+      ${!finished && phase !== 'open' && !demoSteps?.length ? actionButton('advance', {
         stepId: nextStep?.id,
         label: !nextStep ? '结束教案' : !step ? '开始上课' : actions.advance,
         disabled
       }) : ''}
-      ${!finished && nextStep && phase !== 'open' ? actionButton('skip', {
+      ${!finished && nextStep && phase !== 'open' && !demoSteps?.length ? actionButton('skip', {
         stepId: nextStep.id, secondary: true, disabled
       }) : ''}
+      ${chooseDemo && run ? actionButton('finish', { disabled, secondary: true }) : ''}
     </div>
     ${step?.teacher?.note || step?.teacher?.explanation ? `<details id="teacher-notes">
       <summary>教师提示</summary><div class="stack">
@@ -281,7 +324,7 @@ export function live(context) {
   const receipt = participant?.receipt || context.receipt;
   const headline = finished ? '本场课堂结束' : step?.title || '等待课堂开始';
   const subtitle = [lesson.title, '房间 ' + code, participant ? numberLabel(participant.number) : null].filter(Boolean).join('　');
-  const activity = `<section class="panel lesson-panel">
+  const activity = `<section class="panel lesson-panel${step?.module === 'demo@1' && view === 'student' ? ' demo-panel' : ''}">
     ${run && !finished ? `<div class="row space-between">
       <span class="phase" data-phase="${h(run.status)}">${h(phases[run.status])}</span><span>线上 ${run.count} 份</span>
     </div>` : ''}
@@ -300,7 +343,7 @@ export function live(context) {
     ${pendingCommand ? `<section class="panel"><p>上一条主持操作待确认。${readOnly ? '' : '请先重试原操作。'}</p>
       ${readOnly ? '' : `<button class="secondary" data-retry-command${disable(busy)}>确认原操作</button>`}</section>` : ''}`;
   return `${heading(headline, subtitle)}
-    <div class="${host || view === 'screen' ? 'classroom-grid' : 'narrow'}">
+    <div class="${host || view === 'screen' ? 'classroom-grid' : step?.module === 'demo@1' ? 'demo-workspace' : 'narrow'}">
       <div class="stack">${status}${activity}${draw}
         ${host ? `<details id="host-credential"><summary>主持凭证备份</summary>
           <div class="stack">
@@ -320,12 +363,20 @@ export function live(context) {
 }
 
 export function preview({ lessons, lesson, step, choice }) {
-  return `<section class="narrow stack">${heading(step?.title || '独立试玩', lesson?.title || '')}
-    <nav class="row" aria-label="试玩教案">${lessons.map(({ id, title }) =>
+  const demos = lesson?.steps.length > 8;
+  return `<section class="${step?.module === 'demo@1' ? 'stack' : 'narrow stack'}">${heading(step?.title || '独立试玩', lesson?.title || '')}
+    <nav class="row" aria-label="试玩作品集">${lessons.map(({ id, title }) =>
       `<a href="/?mode=preview&lesson=${encodeURIComponent(id)}">${h(title)}</a>`).join('')}</nav>
-    ${lesson ? `<nav class="row" aria-label="试玩环节">${lesson.steps.map(({ id, title }) =>
+    ${demos ? `<form class="row" data-form="preview-step">
+      <label>选择互动作品
+        <select id="preview-demo" name="stepId">
+          ${lesson.steps.map(({ id, title }) => `<option value="${h(id)}"${id === step?.id ? ' selected' : ''}>${h(title)}</option>`).join('')}
+        </select>
+      </label>
+      <button class="secondary" type="submit">打开作品</button>
+    </form>` : lesson ? `<nav class="row" aria-label="试玩环节">${lesson.steps.map(({ id, title }) =>
       `<button type="button" class="secondary" data-preview-step="${h(id)}"
         aria-current="${id === step?.id ? 'step' : 'false'}">${h(title)}</button>`).join('')}</nav>` : ''}
-    ${step ? `<section class="panel lesson-panel">${stepView(step, { view: 'preview', choice })}</section>` : ''}
+    ${step ? `<section class="panel lesson-panel${step.module === 'demo@1' ? ' demo-panel' : ''}">${stepView(step, { view: 'preview', choice })}</section>` : ''}
   </section>`;
 }

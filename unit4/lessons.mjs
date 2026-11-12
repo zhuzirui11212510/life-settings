@@ -1,8 +1,9 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { defaultLessonId, demoLessons } from './demo-catalog.mjs';
+
+export { defaultLessonId };
 
 // These identifiers are part of saved rooms. Keep old module versions readable.
-const activityModules = new Set(['framing@1', 'choice@1']);
-const defaultLessonId = 'reading-2';
+const activityModules = new Set(['framing@1', 'choice@1', 'demo@1']);
 const identifier = /^[a-z][a-z0-9-]{0,39}$/;
 const versionPattern = /^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$/;
 
@@ -35,8 +36,9 @@ function validateOptions(step, path) {
   const { body, prompt, options } = step.config;
   checkText(body, `${path}.body`, 1600);
   checkText(prompt, `${path}.prompt`);
-  if (!Array.isArray(options) || options.length < 2 || options.length > 8) {
-    throw new TypeError(`${path}.options must have between 2 and 8 choices`);
+  const minOptions = step.module === 'demo@1' ? 1 : 2;
+  if (!Array.isArray(options) || options.length < minOptions || options.length > 8) {
+    throw new TypeError(`${path}.options must have between ${minOptions} and 8 choices`);
   }
   const framing = step.module === 'framing@1';
   const optionIds = new Set();
@@ -89,7 +91,14 @@ export function validateLesson(lesson) {
         break;
       case 'activity':
         if (!activityModules.has(step.module)) throw new TypeError(`${path}.module is not supported`);
-        checkFields(step.config, ['body', 'prompt', 'options'], configPath);
+        if (step.module === 'demo@1') {
+          checkFields(step.config, ['body', 'prompt', 'options', 'demoUrl'], configPath);
+          if (typeof step.config.demoUrl !== 'string' || !/^\/demos\/[a-z0-9-]+\/v[1-9][0-9]*\/index\.html\?classroom=1(?:#[a-z][a-z0-9-]*)?$/.test(step.config.demoUrl)) {
+            throw new TypeError(`${configPath}.demoUrl must name a versioned classroom demo`);
+          }
+        } else {
+          checkFields(step.config, ['body', 'prompt', 'options'], configPath);
+        }
         optionIds = validateOptions(step, configPath);
         break;
       case 'discussion':
@@ -127,6 +136,7 @@ export function viewStep(step, { role, phase }) {
   if (config.prompt !== undefined) view.config.prompt = config.prompt;
   if (type === 'activity') {
     view.module = step.module;
+    if (step.module === 'demo@1') view.config.demoUrl = config.demoUrl;
     view.config.options = config.options.map(({ id, label, artifact }) => {
       if (step.module === 'framing@1') {
         return { id, label, artifact: { title: artifact.title, body: artifact.body } };
@@ -148,7 +158,7 @@ export function viewStep(step, { role, phase }) {
 
 export function validateAnswer(step, value) {
   if (step.type === 'activity' && step.config.options.some(({ id }) => id === value)) return value;
-  throw Object.assign(new Error('请选择本轮题目中的一个选项。'), { status: 400, code: 'INVALID_ANSWER' });
+  throw Object.assign(new Error('提交结果与本轮活动不匹配。'), { status: 400, code: 'INVALID_ANSWER' });
 }
 
 export function summarizeAnswers(step, values) {
@@ -171,18 +181,16 @@ function versionNumber(version) {
 
 const lessons = new Map();
 const latest = new Map();
-const contentDirectory = new URL('./lessons/', import.meta.url);
-for (const filename of readdirSync(contentDirectory).sort()) {
-  if (!filename.endsWith('.json')) continue;
+for (const lesson of demoLessons) {
+  const key = `${lesson.id}@${lesson.version}`;
   try {
-    const lesson = validateLesson(JSON.parse(readFileSync(new URL(filename, contentDirectory), 'utf8')));
-    const key = `${lesson.id}@${lesson.version}`;
+    validateLesson(lesson);
     if (lessons.has(key)) throw new TypeError(`Duplicate lesson version ${key}`);
     lessons.set(key, lesson);
     const existing = latest.get(lesson.id);
     if (!existing || versionNumber(lesson.version) > versionNumber(existing.version)) latest.set(lesson.id, lesson);
   } catch (error) {
-    throw new Error(`Invalid Unit 4 lesson file ${filename}: ${error.message}`, { cause: error });
+    throw new Error(`Invalid classroom collection ${key}: ${error.message}`, { cause: error });
   }
 }
 
