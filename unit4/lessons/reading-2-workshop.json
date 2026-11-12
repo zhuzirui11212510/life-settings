@@ -1,0 +1,54 @@
+{
+  "id": "reading-2-workshop",
+  "version": "1.0.0",
+  "title": "Reading 2 · 书评证据小练习",
+  "steps": [
+    {
+      "id": "workshop-intro",
+      "type": "briefing",
+      "title": "选入书评，还是写进书评？",
+      "config": {
+        "body": "Reading 2 讨论了哪些书获得评论，以及评论怎样描述这些书。先在手边教材各找一句能指向这两个问题的原文。"
+      }
+    },
+    {
+      "id": "fictional-desk",
+      "type": "briefing",
+      "title": "看看模拟编辑台的两份材料",
+      "config": {
+        "body": "Fictional editorial desk · Sheet A lists which titles were selected for the review section. Sheet B contains the written reviews of the selected titles.",
+        "prompt": "For each sheet, tell a partner one question it could help you answer."
+      }
+    },
+    {
+      "id": "choose-evidence",
+      "type": "activity",
+      "module": "choice@1",
+      "title": "选一份材料核查措辞",
+      "config": {
+        "body": "You want to know whether reviews describe two sets of books using different words.",
+        "prompt": "What would you compare first?",
+        "options": [
+          { "id": "titles", "label": "Which book titles were selected for review." },
+          { "id": "wording", "label": "Words in the written reviews for the two sets of books." },
+          { "id": "sales", "label": "How many copies of each book were sold." }
+        ]
+      },
+      "teacher": {
+        "note": "同桌各说一句理由。揭晓后让同学解释另一份材料适合回答什么问题。",
+        "correctOptionId": "wording",
+        "explanation": "The question concerns descriptions, so compare the wording of the reviews. A list of titles can help you ask which books received coverage."
+      }
+    },
+    {
+      "id": "workshop-discussion",
+      "type": "discussion",
+      "title": "换一个问题，证据也要换吗？",
+      "sourceStepId": "choose-evidence",
+      "fallback": "模拟编辑台有两份材料：一张记录获评书名的清单，一叠书评原文。同桌各用一份材料提一个研究问题，再交换问题，判断手中的材料能不能回答对方。",
+      "config": {
+        "prompt": "For the question …, I would compare … because … ."
+      }
+    }
+  ]
+}

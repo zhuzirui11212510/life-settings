@@ -5,6 +5,7 @@
 *.db
 *.db-*
 LifeSettings_Host_*.json
+Unit4_Host_*.json
 LifeSettings_Results_*.json
 My_Life_Settings*.json
 

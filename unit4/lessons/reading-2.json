@@ -1,0 +1,85 @@
+{
+  "id": "reading-2",
+  "version": "1.0.0",
+  "title": "Reading 2 · 同一场景，两种书评",
+  "steps": [
+    {
+      "id": "intro",
+      "type": "briefing",
+      "title": "先看谁在说",
+      "config": {
+        "body": "打开 Unit 4 Reading 2，找到 Piper 和 So 说明研究材料的段落。读标题时，先判断那句话听起来在谈作家、作品，还是书评作者。",
+        "prompt": "Who is doing the describing?"
+      },
+      "teacher": {
+        "note": "让同学先说直觉，再找段落中的研究单位。下一环节用自编场景观察书评如何选取细节。"
+      }
+    },
+    {
+      "id": "book-review",
+      "type": "activity",
+      "module": "framing@1",
+      "title": "给同一幕配头版",
+      "config": {
+        "body": "Fictional scene · At the flood shelter, Mina tucked a blanket around her grandmother while a neighbor carried in dry boots. She marked safe routes on a street map and sent two volunteers to check the north road.",
+        "prompt": "Choose what your review will foreground. Try both headlines, then submit the one you would print.",
+        "options": [
+          {
+            "id": "care",
+            "label": "Family care",
+            "artifact": {
+              "title": "A granddaughter keeps watch",
+              "body": "“Tucked a blanket around her grandmother” brings Mina’s care for her family into focus."
+            }
+          },
+          {
+            "id": "action",
+            "label": "Public action",
+            "artifact": {
+              "title": "A young organizer maps a way out",
+              "body": "“Marked safe routes” and “sent two volunteers” bring Mina’s work for the neighborhood into focus."
+            }
+          }
+        ]
+      },
+      "teacher": {
+        "note": "给约 40 秒试排。请选不同头版的两位同学各念一个短语，再问哪一处情节两条标题都没提到。",
+        "explanation": "Both reviews can quote the same story. They give different actions the lead. The neighbor carrying dry boots appears in neither headline."
+      }
+    },
+    {
+      "id": "discussion",
+      "type": "discussion",
+      "title": "头版如何改变读者预期？",
+      "sourceStepId": "book-review",
+      "fallback": "自编场景：洪灾后，Mina 给祖母盖上毯子，一位邻居送来干靴子。Mina 在地图上标出安全路线，并派两名志愿者去查看北路。同桌分别用照料家人和组织志愿者开头，指出各自引用的动作，再找一个两人都略过的细节。",
+      "config": {
+        "body": "把班级选出的头版和原场景放在一起。各找一个支持头版的动作，再找一个另一种头版更容易让读者注意到的动作。",
+        "prompt": "Our review foregrounds … by citing … . A different lead would make readers notice … ."
+      },
+      "teacher": {
+        "note": "班级的选择属于这次课堂演示。回到 Reading 2 时，请学生说出原研究实际比较的材料，并解释为什么选择强调一个细节会改变读者对同一本书的印象。"
+      }
+    },
+    {
+      "id": "exit-ticket",
+      "type": "activity",
+      "module": "choice@1",
+      "title": "退场条 · 证据能支持哪一句？",
+      "config": {
+        "body": "Piper and So analyzed wording in a sample of published book reviews. They compared descriptions in reviews of books by women and men.",
+        "prompt": "Choose a claim supported by those materials. Tell your partner what you would read to study the books’ themes directly.",
+        "options": [
+          { "id": "books", "label": "The study identified the most common themes in the books themselves." },
+          { "id": "reviews", "label": "The study compared how reviewers described books by women and men in this sample." },
+          { "id": "selection", "label": "The study counted all books published by women and men during the period." }
+        ]
+      },
+      "teacher": {
+        "note": "请学生先用英语复述研究材料，再说出一项可以用来研究作品主题的新材料。",
+        "correctOptionId": "reviews",
+        "explanation": "The research materials were published reviews. A study of the books’ themes would need a sample of the books themselves, including attention to books that received no review."
+      }
+    }
+  ]
+}

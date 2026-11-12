@@ -78,3 +78,7 @@ The QR generator's third-party license is retained in `public/QR-LICENSE.txt`.
 ## Interface refresh (3.1)
 
 Warm editorial styling, mobile setting shortcuts, clearer unlock states and preserved keyboard focus during autosave. See [UI refresh notes](docs/UI-REFRESH.md) for changes, validation limits and the four-file server update.
+
+## Unit 4 · Reading 2 互动课堂
+
+在仓库根目录运行 `npm run unit4`，打开 `http://127.0.0.1:8794/?mode=host`。教室局域网试课用 `npm run unit4:lan`。主持台可以开房、分享学生入口并另开投影窗口。单人可用 `http://127.0.0.1:8794/?mode=preview` 试玩题面。见[开课、联调和扩展说明](docs/unit4/run.md)。
