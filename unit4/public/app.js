@@ -78,6 +78,17 @@ function updateUrl(query) {
   history.replaceState(null, '', '/?' + new URLSearchParams(query));
 }
 
+function updateSiblings(anchor, current, replacement, position) {
+  if (current.length === replacement.length) {
+    current.forEach((node, index) => {
+      if (!node.isEqualNode(replacement[index])) node.replaceWith(replacement[index]);
+    });
+    return;
+  }
+  current.forEach((node) => node.remove());
+  anchor[position](...replacement);
+}
+
 function replaceContent(html) {
   const currentFrame = main.querySelector('[data-demo-key]');
   if (!currentFrame) {
@@ -96,12 +107,12 @@ function replaceContent(html) {
   let current = currentFrame;
   let replacement = newFrame;
   while (current !== main) {
+    const existing = Array.from(current.parentNode.childNodes);
     const siblings = Array.from(replacement.parentNode.childNodes);
+    const currentIndex = existing.indexOf(current);
     const index = siblings.indexOf(replacement);
-    while (current.previousSibling) current.previousSibling.remove();
-    while (current.nextSibling) current.nextSibling.remove();
-    current.before(...siblings.slice(0, index));
-    current.after(...siblings.slice(index + 1));
+    updateSiblings(current, existing.slice(0, currentIndex), siblings.slice(0, index), 'before');
+    updateSiblings(current, existing.slice(currentIndex + 1), siblings.slice(index + 1), 'after');
     current = current.parentNode;
     replacement = replacement.parentNode;
   }
@@ -155,7 +166,7 @@ function render() {
   if (view === 'home' || (view === 'screen' && !code)) return replace(landing());
   if (view === 'preview') return replace(preview({ lessons, lesson: previewLesson, step: previewStep, choice }));
   if (view === 'host' && (!code || !token || expired)) {
-    return replace(hostEntry({ lessons, busy, code, pending: cache.get('create') || createAttempt }));
+    return replace(hostEntry({ lessons, busy, code, preferredLesson: params.get('lesson'), pending: cache.get('create') || createAttempt }));
   }
   if (view === 'student' && (!token || expired) && (state || expired)) {
     return replace(joinEntry({ code, needsSeat, seat, busy, expired }));
@@ -191,7 +202,10 @@ function acceptState(next) {
     return;
   }
   const rolledBack = state && next.revision < state.revision;
-  if (rolledBack || state?.run?.id !== next.run?.id) choice = '';
+  const newRun = state?.run?.id !== next.run?.id;
+  const newStep = state && (state.step?.id !== next.step?.id || newRun || state.finished !== next.finished);
+  const closingDemo = state?.step?.module === 'demo@1' && state.run?.status === 'open' && next.run?.status !== 'open';
+  if (rolledBack || newRun || closingDemo) choice = '';
   if (rolledBack) {
     receipt = null;
     setNotice();
@@ -206,6 +220,10 @@ function acceptState(next) {
   if (recovering || !state || next.revision !== state.revision || next.readOnly !== state.readOnly || next.role !== state.role) {
     state = next;
     render();
+    if ((view === 'student' || view === 'screen') && (newStep || (view === 'student' && closingDemo))) {
+      main.querySelector('h1')?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
   }
   if (pendingAnswer && token && !next.readOnly && !busy && Date.now() >= retryAt) {
     queueMicrotask(() => {
@@ -387,10 +405,13 @@ function submitAnswer() {
   pendingAnswer = { requestId: randomHex(16), runId: state.run.id, value: choice };
   remember(roomCache('answer'), pendingAnswer);
   sendAnswer();
+  main.querySelector('#demo-feedback')?.focus({ preventScroll: true });
 }
 
 async function command(action, fields = {}) {
   if (busy || (!pendingCommand && !action)) return;
+  const classroomAction = ['advance', 'skip', 'select-demo', 'lock', 'reveal', 'abort', 'reopen', 'finish']
+    .includes(pendingCommand?.action ?? action);
   await perform(async () => {
     if (!pendingCommand) {
       pendingCommand = { action, requestId: randomHex(16), ...fields };
@@ -420,6 +441,9 @@ async function command(action, fields = {}) {
     pendingCommand = null;
     cache.remove(roomCache('command'));
   });
+  if (classroomAction && document.activeElement === document.body) {
+    main.querySelector('.host-controls > button:enabled, #send-demo:enabled')?.focus({ preventScroll: true });
+  }
 }
 
 function exportHost() {
@@ -495,6 +519,7 @@ function openPreviewStep(id) {
   if (!next || previewStep === next) return;
   previewStep = next;
   choice = '';
+  updateUrl({ mode: 'preview', lesson: previewLesson.id, step: next.id });
   render();
 }
 
@@ -585,7 +610,7 @@ async function boot() {
       const selected = lessons.find(({ id }) => id === params.get('lesson')) || lessons[0];
       if (selected) {
         previewLesson = await request('lessons/' + encodeURIComponent(selected.id));
-        previewStep = previewLesson.steps.find(({ type }) => type === 'activity') || previewLesson.steps[0];
+        previewStep = previewLesson.steps.find(({ id }) => id === params.get('step')) || previewLesson.steps[0];
         render();
       }
     } else {

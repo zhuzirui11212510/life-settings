@@ -7,6 +7,7 @@ const h = escape;
 const phases = { open: '正在收答', locked: '已锁定', revealed: '已揭晓', aborted: '线上已中止' };
 const disable = (value) => value ? ' disabled' : '';
 const numberLabel = (value) => '#' + String(value).padStart(3, '0');
+const sampleLesson = 'take-the-light';
 
 export function roomCode(value) {
   const code = String(value ?? '').trim().toUpperCase();
@@ -23,7 +24,7 @@ export function inviteOrigin(value) {
 }
 
 function heading(title, line = '') {
-  return `<header class="page-head"><h1>${h(title)}</h1>${line ? `<p class="quiet">${h(line)}</p>` : ''}</header>`;
+  return `<header class="page-head"><h1 tabindex="-1">${h(title)}</h1>${line ? `<p class="quiet">${h(line)}</p>` : ''}</header>`;
 }
 
 export function landing() {
@@ -35,6 +36,14 @@ export function landing() {
       <input class="field-short" id="find-room" name="code" autocomplete="off" autocapitalize="characters" maxlength="6" required>
       <button type="submit">进入课堂</button>
     </form>
+    <section class="panel" aria-labelledby="sample-lesson">
+      <h2 id="sample-lesson">今晚谁来接灯？</h2>
+      <p>Unit 4 · Reading 2。用同一篇故事排两版节目单导语，再回到课文核对研究者读了什么材料。</p>
+      <nav class="row" aria-label="样课入口">
+        <a class="button" href="/?mode=preview&amp;lesson=${sampleLesson}">预览样课</a>
+        <a class="button secondary" href="/?mode=host&amp;new=1&amp;lesson=${sampleLesson}">用这节课开房</a>
+      </nav>
+    </section>
     <nav class="row" aria-label="其他课堂入口">
       <a href="/?mode=host">主持台</a>
       <a href="/?mode=preview">独立试玩</a>
@@ -42,14 +51,14 @@ export function landing() {
   </section>`;
 }
 
-export function hostEntry({ lessons, busy, pending, code }) {
+export function hostEntry({ lessons, busy, pending, code, preferredLesson }) {
   return `<section class="narrow stack">${heading('主持台', code ? '创建或恢复一间课堂。' : '开房后，把学生入口发给全班。')}
     <form class="panel" data-form="create">
       ${pending ? `<p>上一条开房请求待确认。重试会找回同一间课堂。</p>
         <button type="submit"${disable(busy)}>重试开房</button>` : `
-        <label class="field-wide">可用作品
+        <label class="field-wide">选择教案或作品集
           <select id="lesson" name="lessonId" required${disable(busy)}>
-            ${lessons.map((lesson) => `<option value="${h(lesson.id)}">${h(lesson.title)} (${h(lesson.version)})</option>`).join('')}
+            ${lessons.map((lesson) => `<option value="${h(lesson.id)}"${lesson.id === preferredLesson ? ' selected' : ''}>${h(lesson.title)} (${h(lesson.version)})</option>`).join('')}
           </select>
         </label>
         <label class="check-label"><input type="checkbox" id="lottery" name="lottery"${disable(busy)}> 启用个人编号与抽奖</label>
@@ -158,25 +167,34 @@ function activityOutcome(step, run, language) {
 function demoView(step, { view, run, receipt, choice, pending, busy, readOnly }) {
   const { body, prompt, demoUrl, options } = step.config;
   const interactive = view === 'preview' || (view === 'student' && run?.status === 'open' && !readOnly);
-  const pendingValue = pending?.runId === run?.id ? pending?.value : null;
-  const selected = options.find(({ id }) => id === (receipt?.value ?? pendingValue ?? choice));
-  const canSubmit = view === 'student' && interactive && !receipt && !pending;
+  const currentPending = pending && pending.runId === run?.id;
+  const selected = options.find(({ id }) => id === (receipt?.value ?? (currentPending ? pending.value : interactive ? choice : null)));
   const source = new URL(demoUrl, location.origin);
   if (source.origin !== location.origin || !source.pathname.startsWith('/demos/')) return '';
   source.searchParams.delete('classroom');
   const standalone = source.href;
   source.searchParams.set('classroom', '1');
   const key = [run?.id || step.id, source.href].join(':');
-  const response = `${receipt ? '<p class="receipt" role="status">已收到你的成品。</p>' : ''}
-    ${selected ? `<p class="demo-observation" role="status">本次结果 <strong>${h(selected.label)}</strong></p>` : ''}
-    ${canSubmit ? `<button type="button" id="submit-answer" data-submit${disable(busy || !selected)}>提交本次结果</button>
-      ${selected ? '' : '<small>完成作品里的操作后可提交。</small>'}` : ''}`;
+  const student = view === 'student';
+  let response = '';
+  if (student && receipt) {
+    response = `<p class="receipt" id="demo-feedback" tabindex="-1" role="status">已收到${selected ? ` · <strong>${h(selected.label)}</strong>` : ''}</p>`;
+  } else if (student && currentPending) {
+    response = `<p id="demo-feedback" tabindex="-1" role="status">${busy ? '正在确认提交…' : '提交待确认'}${selected ? ` · <strong>${h(selected.label)}</strong>` : ''}</p>
+      ${readOnly ? '' : `<button class="secondary" id="retry-answer" data-retry-answer${disable(busy)}>重试确认</button>`}`;
+  } else if (interactive) {
+    response = `<p id="demo-feedback" tabindex="-1" role="status">${selected ? `本次结果 · <strong>${h(selected.label)}</strong>` : '完成操作后在这里查看结果。'}</p>
+      ${student ? `<button type="button" id="submit-answer" data-submit${disable(busy || !selected || pending)}>提交结果</button>` : ''}`;
+  } else if (student && !readOnly) {
+    response = '<p class="quiet" id="demo-feedback" tabindex="-1">本轮收答已结束。你没有已确认的提交。</p>';
+  }
   const question = `<p class="copy">${h(body)}</p><p class="prompt">${h(prompt)}</p>`;
   const outcome = activityOutcome(step, run, 'zh-CN');
+  const responseBar = response ? `<div class="demo-response${interactive ? ' demo-response-sticky' : ''}">${response}</div>` : '';
   const content = interactive ? `
-    <iframe id="demo-frame" class="demo-frame" data-demo-key="${h(key)}" src="${h(source.href)}" title="${h(step.title)}"></iframe>
-    <div class="demo-response">${response}</div>`
-    : `${response}${view === 'screen' || view === 'host' ? `<a href="${h(standalone)}" target="_blank" rel="noopener">${view === 'screen' ? '打开全屏演示' : '打开作品预览'}</a>` : ''}`;
+    ${responseBar}
+    <iframe id="demo-frame" class="demo-frame" data-demo-key="${h(key)}" src="${h(source.href)}" title="${h(step.title)}"></iframe>`
+    : `${responseBar}${view === 'screen' || view === 'host' ? `<a href="${h(standalone)}" target="_blank" rel="noopener">${view === 'screen' ? '打开全屏演示' : '打开作品预览'}</a>` : ''}`;
   return view === 'screen' && run?.status === 'revealed'
     ? `${outcome}${content}<details id="revealed-question"><summary>查看操作说明</summary><div class="stack">${question}</div></details>`
     : question + content + outcome;
@@ -209,10 +227,11 @@ function stepView(step, context) {
   if (step.type === 'briefing') return copyBlock(step.config);
   const online = step.discussion;
   const paper = step.paperDiscussion;
-  return `${copyBlock(online?.count ? step.config : { prompt: step.config.prompt })}
-    ${online ? results('本课线上结果', online.choices, online.count) : ''}
-    ${!online?.count ? `<section class="stack"><h2>${online ? '示范讨论' : '备用讨论'}</h2><p>${h(step.fallback)}</p></section>` : ''}
+  const source = copyBlock(step.config);
+  const tally = `${online ? results('本课线上结果', online.choices, online.count) : ''}
     ${paper ? results('本课纸面统计', paper.choices, paper.count) : ''}`;
+  const fallback = !online?.count ? `<section class="stack"><h2>${online ? '示范讨论' : '备用讨论'}</h2><p>${h(step.fallback)}</p></section>` : '';
+  return context.view === 'screen' ? tally + source + fallback : source + tally + fallback;
 }
 
 const actions = {
@@ -229,37 +248,38 @@ function actionButton(action, { runId, stepId, label = actions[action], secondar
 function hostControls(state, disabled) {
   const { step, run, nextStep, finished, demoSteps } = state;
   const phase = run?.status;
-  const chooseDemo = demoSteps?.length && !finished && phase !== 'open';
-  return `<section class="panel">
-    <h2>课堂控制</h2>
-    ${chooseDemo ? `<form data-form="select-demo">
+  const freeChoice = Boolean(demoSteps?.length);
+  const canNavigate = !finished && phase !== 'open';
+  const navigation = !canNavigate ? '' : freeChoice ? `<form data-form="select-demo">
       <label class="field-wide">选择互动作品
         <select id="demo-select" name="stepId" required${disable(disabled)}>
           ${demoSteps.map(({ id, title }) => `<option value="${h(id)}"${id === nextStep?.id ? ' selected' : ''}>${h(title)}</option>`).join('')}
         </select>
       </label>
-      <button type="submit"${disable(disabled)}>发起所选作品</button>
-    </form>` : ''}
-    ${nextStep && !demoSteps?.length ? `<p class="compact">下一环节 <strong>${h(nextStep.title)}</strong></p>` : ''}
-    <div class="actions">
-      ${phase === 'open' ? actionButton('lock', { runId: run.id, disabled }) : ''}
-      ${phase === 'open' || phase === 'locked' ? actionButton('abort', { runId: run.id, disabled, secondary: true }) : ''}
-      ${phase === 'locked' ? actionButton('reveal', { runId: run.id, disabled }) : ''}
-      ${phase && phase !== 'open' && !finished ? actionButton('reopen', { runId: run.id, disabled, secondary: true }) : ''}
-      ${!finished && phase !== 'open' && !demoSteps?.length ? actionButton('advance', {
-        stepId: nextStep?.id,
-        label: !nextStep ? '结束教案' : !step ? '开始上课' : actions.advance,
-        disabled
-      }) : ''}
-      ${!finished && nextStep && phase !== 'open' && !demoSteps?.length ? actionButton('skip', {
-        stepId: nextStep.id, secondary: true, disabled
-      }) : ''}
-      ${chooseDemo && run ? actionButton('finish', { disabled, secondary: true }) : ''}
-    </div>
-    ${step?.teacher?.note || step?.teacher?.explanation ? `<details id="teacher-notes">
-      <summary>教师提示</summary><div class="stack">
-        ${step.teacher.note ? `<p>${h(step.teacher.note)}</p>` : ''}
-        ${step.teacher.explanation ? `<p>${h(step.teacher.explanation)}</p>` : ''}
+      <button id="send-demo" type="submit"${disable(disabled)}>发给学生</button>
+    </form>` : actionButton('advance', {
+    stepId: nextStep?.id,
+    label: !nextStep ? '结束教案' : !step ? '开始上课' : actions.advance,
+    disabled
+  });
+  const extras = [
+    (phase === 'open' || phase === 'locked') && actionButton('abort', { runId: run.id, disabled, secondary: true }),
+    phase && canNavigate && actionButton('reopen', { runId: run.id, disabled, secondary: true }),
+    canNavigate && nextStep && !freeChoice && actionButton('skip', { stepId: nextStep.id, secondary: true, disabled }),
+    freeChoice && canNavigate && run && actionButton('finish', { disabled, secondary: true }),
+  ].filter(Boolean).join('');
+  return `<section class="panel host-controls">
+    <h2>课堂控制</h2>
+    ${run && !finished ? `<div class="row space-between"><span class="phase" data-phase="${h(phase)}">${h(phases[phase])}</span><span>已收 ${run.count} 份</span></div>` : ''}
+    ${nextStep && !freeChoice && !finished ? `<p class="compact">${!step ? '第一环节' : '下一环节'} <strong>${h(nextStep.title)}</strong></p>` : ''}
+    ${phase === 'open' ? actionButton('lock', { runId: run.id, disabled }) : phase === 'locked' ? actionButton('reveal', { runId: run.id, disabled }) : navigation}
+    ${step?.teacher?.note ? `<div class="teacher-cue stack"><h3>教师提示</h3><p class="copy">${h(step.teacher.note)}</p></div>` : ''}
+    ${step?.teacher?.explanation ? `<details id="teacher-answer-${h(step.id)}">
+      <summary>查看讲解</summary><p class="copy">${h(step.teacher.explanation)}</p>
+    </details>` : ''}
+    ${extras ? `<details id="host-other-actions-${h(phase || 'waiting')}">
+      <summary>其他课堂操作</summary><div class="stack">
+        ${phase === 'locked' ? navigation : ''}<div class="actions">${extras}</div>
       </div>
     </details>` : ''}
     ${phase && phase !== 'open' && !run.paperCounts && step?.config?.options ? `<details id="paper-${h(run.id)}">
@@ -325,7 +345,7 @@ export function live(context) {
   const headline = finished ? '本场课堂结束' : step?.title || '等待课堂开始';
   const subtitle = [lesson.title, '房间 ' + code, participant ? numberLabel(participant.number) : null].filter(Boolean).join('　');
   const activity = `<section class="panel lesson-panel${step?.module === 'demo@1' && view === 'student' ? ' demo-panel' : ''}">
-    ${run && !finished ? `<div class="row space-between">
+    ${run && !finished && (!host || readOnly) ? `<div class="row space-between">
       <span class="phase" data-phase="${h(run.status)}">${h(phases[run.status])}</span><span>线上 ${run.count} 份</span>
     </div>` : ''}
     ${!finished ? stepView(step, { ...context, run, receipt, readOnly }) : '<p>请按主持安排继续讨论或离场。</p>'}
@@ -338,22 +358,22 @@ export function live(context) {
         <button data-switch-seat${disable(busy || Boolean(pending) || readOnly)}>使用链接里的编号</button>
         <button class="secondary" data-keep-seat${disable(busy)}>保留当前编号</button>
       </div></section>` : ''}
-    ${pending ? `<section class="panel"><p>你有一份答卷待确认。${readOnly ? '' : '重试会沿用原提交。'}</p>
+    ${pending && !(step?.module === 'demo@1' && pending.runId === run?.id) ? `<section class="panel"><p>你有一份答卷待确认。${readOnly ? '' : '重试会沿用原提交。'}</p>
       ${readOnly ? '' : `<button class="secondary" data-retry-answer${disable(busy)}>确认这份提交</button>`}</section>` : ''}
     ${pendingCommand ? `<section class="panel"><p>上一条主持操作待确认。${readOnly ? '' : '请先重试原操作。'}</p>
       ${readOnly ? '' : `<button class="secondary" data-retry-command${disable(busy)}>确认原操作</button>`}</section>` : ''}`;
   return `${heading(headline, subtitle)}
-    <div class="${host || view === 'screen' ? 'classroom-grid' : step?.module === 'demo@1' ? 'demo-workspace' : 'narrow'}">
-      <div class="stack">${status}${activity}${draw}
+    <div class="${host ? 'classroom-grid host-grid' : view === 'screen' ? 'classroom-grid' : step?.module === 'demo@1' ? 'demo-workspace' : 'narrow'}">
+      ${host && !readOnly ? `<div class="host-toolbar stack">${status}${hostControls(state, busy || Boolean(pendingCommand))}</div>` : ''}
+      <div class="stack${host ? ' host-lesson' : ''}">${host && !readOnly ? '' : status}${activity}${draw}
         ${host ? `<details id="host-credential"><summary>主持凭证备份</summary>
           <div class="stack">
             <p class="quiet compact">可用房间码和凭证恢复主持台。请仅保存在自己能访问的位置。</p>
             <button class="secondary" type="button" data-export>下载主持凭证</button>
           </div></details>` : ''}
       </div>
-      ${host || view === 'screen' ? `<aside class="stack">
+      ${host || view === 'screen' ? `<aside class="stack${host ? ' host-sidebar' : ''}">
         ${invitePanel({ code, invite, screen, origins, edit: host })}
-        ${host && !readOnly ? hostControls(state, busy || Boolean(pendingCommand)) : ''}
         ${host && !readOnly && lottery.enabled ? lotteryControls(state, {
           disabled: busy || Boolean(pendingCommand), seatInvite
         }) : ''}
@@ -366,7 +386,7 @@ export function preview({ lessons, lesson, step, choice }) {
   const demos = lesson?.steps.length > 8;
   return `<section class="${step?.module === 'demo@1' ? 'stack' : 'narrow stack'}">${heading(step?.title || '独立试玩', lesson?.title || '')}
     <nav class="row" aria-label="试玩作品集">${lessons.map(({ id, title }) =>
-      `<a href="/?mode=preview&lesson=${encodeURIComponent(id)}">${h(title)}</a>`).join('')}</nav>
+      `<a href="/?mode=preview&amp;lesson=${encodeURIComponent(id)}"${id === lesson?.id ? ' aria-current="page"' : ''}>${h(title)}</a>`).join('')}</nav>
     ${demos ? `<form class="row" data-form="preview-step">
       <label>选择互动作品
         <select id="preview-demo" name="stepId">
@@ -375,7 +395,7 @@ export function preview({ lessons, lesson, step, choice }) {
       </label>
       <button class="secondary" type="submit">打开作品</button>
     </form>` : lesson ? `<nav class="row" aria-label="试玩环节">${lesson.steps.map(({ id, title }) =>
-      `<button type="button" class="secondary" data-preview-step="${h(id)}"
+      `<button type="button" id="preview-step-${h(id)}" class="secondary" data-preview-step="${h(id)}"
         aria-current="${id === step?.id ? 'step' : 'false'}">${h(title)}</button>`).join('')}</nav>` : ''}
     ${step ? `<section class="panel lesson-panel${step.module === 'demo@1' ? ' demo-panel' : ''}">${stepView(step, { view: 'preview', choice })}</section>` : ''}
   </section>`;

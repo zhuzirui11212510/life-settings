@@ -69,6 +69,10 @@ function receipt(row) {
   return row ? { runId: row.run, requestId: row.request_id, value: row.value, receivedAt: row.received_at } : null;
 }
 
+function isDemoCollection(lesson) {
+  return lesson.steps.every(({ module }) => module === 'demo@1');
+}
+
 export function createStore({ databasePath, readOnly = false }) {
   const { db, schemaVersion, databaseId } = openClassroomDatabase(databasePath, readOnly);
   const statements = new Map();
@@ -277,7 +281,7 @@ export function createStore({ databasePath, readOnly = false }) {
         result.participant = { number, receipt: receipt(answer) };
       }
       if (role === 'host') {
-        result.demoSteps = lesson.steps.filter(step => step.module === 'demo@1').map(({ id, title }) => ({ id, title }));
+        result.demoSteps = isDemoCollection(lesson) ? lesson.steps.map(({ id, title }) => ({ id, title })) : [];
         result.roster = rosterFor(room.code);
         lottery.eligibleCount = decode(room.frozen_pool)?.length ?? result.roster.filter(seat => seat.eligible).length;
         result.runs = all('SELECT * FROM runs WHERE room = ? ORDER BY step_index, attempt', room.code)
@@ -373,7 +377,8 @@ export function createStore({ databasePath, readOnly = false }) {
         fail(409, 'STALE_STEP', '课堂环节已变化，请刷新主持台。');
       }
       if (action === 'finish') return finishRoom(room.code);
-      const index = lesson.steps.findIndex(step => step.id === stepId && step.module === 'demo@1');
+      if (!isDemoCollection(lesson)) fail(400, 'DEMO_NOT_FOUND', '请按教案顺序开启环节。');
+      const index = lesson.steps.findIndex(step => step.id === stepId);
       if (index < 0) fail(400, 'DEMO_NOT_FOUND', '请选择本场的互动作品。');
       return enterStep(room, lesson, index);
     }

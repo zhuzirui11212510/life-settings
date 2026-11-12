@@ -7,7 +7,7 @@ test('the default classroom includes all 21 original demo routes', () => {
   assert.equal(entries[0].id, 'demo-classroom');
   const combined = getLesson();
   const suites = ['one-surface', 'live-stages', 'interaction-atlas'];
-  assert.deepEqual(new Set(entries.slice(1).map(({ id }) => id)), new Set(suites));
+  assert.deepEqual(new Set(entries.slice(1).map(({ id }) => id)), new Set([...suites, 'take-the-light']));
   const routes = new Set();
   for (const id of suites) {
     const lesson = getLesson(id, '1.0.0');
@@ -24,6 +24,18 @@ test('the default classroom includes all 21 original demo routes', () => {
   combined.steps.length = 0;
   assert.equal(getLesson().steps.length, 21);
   assert.equal(getLesson('one-surface', '999.0.0'), null);
+});
+
+test('Take the Light binds its discussion to the student editing activity', () => {
+  const lesson = getLesson('take-the-light', '1.0.0');
+  assert.equal(lesson.title, '今晚谁来接灯？');
+  assert.deepEqual(lesson.steps.map(({ type }) => type), ['briefing', 'activity', 'discussion', 'activity', 'briefing']);
+  const [, edit, discussion, review] = lesson.steps;
+  assert.equal(discussion.sourceStepId, edit.id);
+  assert.equal(edit.config.demoUrl, '/demos/take-the-light/v1/index.html?classroom=1');
+  assert.deepEqual(edit.config.options, [{ id: 'care', label: '家庭照料' }, { id: 'crew', label: '公共参与' }]);
+  assert.equal(viewStep(review, { role: 'student', phase: 'open' }).answer, undefined);
+  assert.equal(viewStep(review, { role: 'screen', phase: 'revealed' }).answer.correctOptionId, 'reviews');
 });
 
 test('lesson validation checks versioned demo paths and outcome IDs', () => {

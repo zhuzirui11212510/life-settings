@@ -69,9 +69,22 @@ main:focus { outline: none; }
 .page-head, .stack { display: grid; gap: 1rem; align-content: start; }
 .page-head { margin-block-end: 1.4rem; }
 .page-head p, .copy { max-width: 64ch; }
+.copy, .prompt { white-space: pre-line; }
 .intro { padding-block: clamp(1rem, 5vw, 4rem); max-width: 47rem; }
 .narrow { max-width: 43rem; margin-inline: auto; }
 .classroom-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem); gap: 1.2rem; }
+.host-grid {
+  grid-template-areas: 'lesson toolbar' 'lesson sidebar';
+  grid-template-rows: auto 1fr;
+  align-items: start;
+}
+.host-grid:not(:has(.host-toolbar)) { grid-template-areas: 'lesson sidebar'; grid-template-rows: auto; }
+.host-toolbar { grid-area: toolbar; }
+.host-lesson { grid-area: lesson; }
+.host-sidebar { grid-area: sidebar; }
+.host-controls > button { justify-self: start; }
+.teacher-cue { gap: .3rem; padding-block-start: .65rem; border-block-start: 1px solid var(--line); }
+.teacher-cue h3 { font-size: 1rem; }
 .panel {
   display: grid;
   align-content: start;
@@ -172,21 +185,21 @@ summary { cursor: pointer; color: var(--violet); }
   background: var(--paper);
 }
 .demo-workspace { max-width: 68rem; margin-inline: auto; }
-.demo-response { display: grid; justify-items: start; gap: .35rem; }
-.demo-response:empty { display: none; }
-.demo-response:has([data-submit]:enabled) {
+.demo-response { display: grid; gap: .45rem; align-items: center; }
+.demo-response:has(button) { grid-template-columns: minmax(0, 1fr) auto; }
+.demo-response-sticky {
   position: sticky;
-  z-index: 1;
-  bottom: max(.5rem, env(safe-area-inset-bottom));
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  padding: .4rem;
+  z-index: 2;
+  top: .35rem;
+  padding: .4rem .55rem;
   border: 1px solid var(--line);
   border-radius: .55rem;
   background: var(--surface);
   box-shadow: 0 .2rem 1rem #2b213c25;
 }
-.demo-observation { padding: .4rem .65rem; background: var(--accent); border-radius: .35rem; }
+.demo-response-sticky .receipt { padding: .35rem .55rem; }
+[data-preview-step][aria-current="step"] { background: var(--accent); font-weight: 600; }
+[aria-label="试玩作品集"] [aria-current="page"] { font-weight: 700; text-decoration-thickness: .15em; }
 [data-form="preview-step"] { align-items: end; }
 [data-form="preview-step"] label { max-width: min(100%, 28rem); }
 .result-list { display: grid; gap: .55rem; }
@@ -213,10 +226,13 @@ body[data-view="screen"] .compact { font-size: .92rem; }
 
 @media (max-width: 46rem) {
   .classroom-grid, body[data-view="screen"] .classroom-grid { grid-template-columns: 1fr; }
+  .host-grid { grid-template-areas: 'toolbar' 'lesson' 'sidebar'; grid-template-rows: auto; }
+  .host-grid:not(:has(.host-toolbar)) { grid-template-areas: 'lesson' 'sidebar'; }
 }
 @media (max-width: 26rem) {
   .masthead { gap: .5rem; }
   .brand span { display: none; }
   .demo-panel { padding-inline: .45rem; }
-  .demo-response:has([data-submit]:enabled) { grid-template-columns: 1fr; }
+  .demo-response { font-size: .9rem; }
+  .demo-response button { padding-inline: .65rem; }
 }

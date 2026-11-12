@@ -1,0 +1,13 @@
+[
+  {
+    "id": "edit-lede",
+    "title": "为节目单取景",
+    "description": "两处细节出现在同一段原稿里。选一处，看看它怎样改变节目单上的推荐语。",
+    "prompt": "Choose a detail to foreground.",
+    "hash": "",
+    "options": [
+      { "id": "care", "label": "家庭照料" },
+      { "id": "crew", "label": "公共参与" }
+    ]
+  }
+]

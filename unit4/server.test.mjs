@@ -178,6 +178,50 @@ test('role boundaries, transport errors, and persisted idempotent receipts', { t
   assert.deepEqual(await room.answer(student, answer), original);
 });
 
+test('Take the Light carries an actual classroom result into the textbook discussion', { timeout: 15_000 }, async t => {
+  const { start } = await fixture(t);
+  const client = await start();
+  const listing = await client.request('lessons');
+  assert.ok(listing.some(({ id }) => id === 'take-the-light'));
+  const preview = await client.request('lessons/take-the-light');
+  assert.deepEqual(preview.steps.map(({ id }) => id), ['night-reading', 'edit-lede', 'compare-leads', 'review-unit', 'exit-line']);
+  assert.doesNotMatch(JSON.stringify(preview), /"(?:teacher|answer|correctOptionId)":/);
+  const { demoUrl } = preview.steps[1].config;
+  assert.equal((await fetch(client.origin + demoUrl, { method: 'HEAD' })).status, 200);
+
+  const { code, token: host } = await createRoom(client, { lessonId: 'take-the-light' });
+  const room = roomApi(client, code);
+  const student = secret();
+  const advance = stepId => room.command(host, 'advance', { stepId });
+  await room.join(student);
+  assert.deepEqual((await room.state(host)).demoSteps, []);
+  await room.command(host, 'select-demo', { stepId: 'edit-lede', expectedStep: null, expectedRun: null }, 400);
+  await advance('night-reading');
+  assert.equal((await room.state(student)).step.id, 'night-reading');
+  const { runId: editRunId } = await advance('edit-lede');
+  await room.answer(student, { requestId: requestId(), runId: editRunId, value: 'crew' });
+  await room.command(host, 'lock', { runId: editRunId });
+  assert.equal((await room.state()).run.counts, undefined);
+  await room.command(host, 'reveal', { runId: editRunId });
+  await advance('compare-leads');
+  const discussion = (await room.state()).step;
+  assert.equal(discussion.discussion.sourceRunId, editRunId);
+  assert.equal(discussion.discussion.count, 1);
+  assert.deepEqual(discussion.discussion.counts, { care: 0, crew: 1 });
+  assert.match(discussion.config.body, /p\.103/);
+
+  const { runId: reviewRunId } = await advance('review-unit');
+  assert.equal((await room.state(student)).step.answer, undefined);
+  await room.answer(student, { requestId: requestId(), runId: reviewRunId, value: 'reviews' });
+  await room.command(host, 'lock', { runId: reviewRunId });
+  await room.command(host, 'reveal', { runId: reviewRunId });
+  assert.equal((await room.state(student)).step.answer.correctOptionId, 'reviews');
+  await advance('exit-line');
+  assert.equal((await room.state(student)).step.id, 'exit-line');
+  await advance(null);
+  assert.equal((await room.state()).finished, true);
+});
+
 test('an incomplete browser request cannot prevent the service from restarting', { timeout: 10_000 }, async t => {
   const { start } = await fixture(t);
   const client = await start();
