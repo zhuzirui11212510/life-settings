@@ -214,14 +214,18 @@ export function createClassroomServer({ dataDir = defaultDataDir, readOnly = fal
 
   // End open event streams before waiting for the HTTP server to close.
   const close = server.close.bind(server);
+  let shutdownTimer;
   server.close = callback => {
     for (const roomStreams of streams.values()) {
       clearTimeout(roomStreams.timer);
       for (const response of roomStreams.listeners.keys()) response.end();
     }
+    // Browsers can leave an idle preconnection or an incomplete request during restart.
+    shutdownTimer ??= setTimeout(() => server.closeAllConnections(), 2000).unref();
     return close(callback);
   };
   server.once('close', () => {
+    clearTimeout(shutdownTimer);
     clearInterval(heartbeat);
     store.close();
   });

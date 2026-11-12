@@ -295,10 +295,10 @@ export function live(context) {
         <button data-switch-seat${disable(busy || Boolean(pending) || readOnly)}>使用链接里的编号</button>
         <button class="secondary" data-keep-seat${disable(busy)}>保留当前编号</button>
       </div></section>` : ''}
-    ${pending ? `<section class="panel"><p>你有一份答卷待确认。重试会沿用原提交。</p>
-      <button class="secondary" data-retry-answer${disable(busy)}>确认这份提交</button></section>` : ''}
-    ${pendingCommand ? `<section class="panel"><p>上一条主持操作待确认。请先重试原操作。</p>
-      <button class="secondary" data-retry-command${disable(busy)}>确认原操作</button></section>` : ''}`;
+    ${pending ? `<section class="panel"><p>你有一份答卷待确认。${readOnly ? '' : '重试会沿用原提交。'}</p>
+      ${readOnly ? '' : `<button class="secondary" data-retry-answer${disable(busy)}>确认这份提交</button>`}</section>` : ''}
+    ${pendingCommand ? `<section class="panel"><p>上一条主持操作待确认。${readOnly ? '' : '请先重试原操作。'}</p>
+      ${readOnly ? '' : `<button class="secondary" data-retry-command${disable(busy)}>确认原操作</button>`}</section>` : ''}`;
   return `${heading(headline, subtitle)}
     <div class="${host || view === 'screen' ? 'classroom-grid' : 'narrow'}">
       <div class="stack">${status}${activity}${draw}

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { once } from 'node:events';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createConnection } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -179,6 +180,25 @@ test('role boundaries, transport errors, and persisted idempotent receipts', { t
   const discussion = await room.state();
   assert.equal(discussion.step.id, 'discussion');
   assert.ok(discussion.step.discussion);
+});
+
+test('an incomplete browser request cannot prevent the service from restarting', { timeout: 10_000 }, async t => {
+  const { start } = await fixture(t);
+  const client = await start();
+  const port = Number(new URL(client.origin).port);
+  const socket = createConnection(port, '127.0.0.1');
+  t.after(() => socket.destroy());
+  await once(socket, 'connect');
+  const expectingContinue = once(socket, 'data');
+  socket.write('POST /api/rooms HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: 100\r\nExpect: 100-continue\r\n\r\n');
+  const [response] = await expectingContinue;
+  assert.match(response.toString(), /^HTTP\/1\.1 100 Continue/);
+  socket.write('{');
+  const disconnected = once(socket, 'close');
+  await client.close();
+  await disconnected;
+  const restarted = await start();
+  assert.ok((await restarted.request('health')).databaseId);
 });
 
 test('60 listening students submit together with a competing lock', { timeout: 35_000 }, async t => {

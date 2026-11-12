@@ -148,7 +148,7 @@ function render() {
   return replace(live({
     state, view, invite, screen, origins, busy, choice, seatInvite, pendingCommand,
     offerSeatSwitch: view === 'student' && Boolean(token && seat),
-    receipt: receipt && receipt.runId === state.run?.id ? receipt : null,
+    receipt: !state.readOnly && receipt?.runId === state.run?.id ? receipt : null,
     pending: pendingAnswer
   }));
 }
@@ -161,7 +161,12 @@ function acceptState(next) {
     expireCredential();
     return;
   }
-  if (state?.run?.id !== next.run?.id) choice = '';
+  const rolledBack = state && next.revision < state.revision;
+  if (rolledBack || state?.run?.id !== next.run?.id) choice = '';
+  if (rolledBack) {
+    receipt = null;
+    setNotice();
+  }
   if (view === 'student' && !token) needsSeat = next.lottery.enabled || Boolean(seat);
   const confirmed = next.participant?.receipt;
   if (pendingAnswer && confirmed?.requestId === pendingAnswer.requestId && confirmed.runId === pendingAnswer.runId) {
