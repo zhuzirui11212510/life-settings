@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#20384d">
+  <title>同一篇稿，两种导语 · 今晚谁来接灯？</title>
+  <link rel="stylesheet" href="./lede.css">
+  <script src="/demo-bridge.js" defer></script>
+  <script src="./lede.js" defer></script>
+</head>
+<body>
+  <main>
+    <header class="scene">
+      <div>
+        <p class="scene-context">礼堂夜读会 · 18:40</p>
+        <h1>同一篇稿，两种导语</h1>
+      </div>
+      <p class="scene-setup">节目单马上要印。读林岑的短篇，点一句你想放在导语前面的证据。</p>
+    </header>
+
+    <div class="worktable">
+      <section class="draft" aria-labelledby="draft-heading">
+        <div class="sheet-heading">
+          <h2 id="draft-heading">林岑的原稿</h2>
+          <span>课堂虚构</span>
+        </div>
+        <div class="source-lines" role="group" aria-label="选一句作为导语证据">
+          <div class="source-card">
+            <button type="button" class="source-line" data-lede="care" aria-pressed="false">
+              <span class="line-tag">家庭照料</span>
+              <span class="line-text" lang="en">On the phone, Ahe <span class="ink">read the hearing-aid instructions aloud for her father.</span></span>
+            </button>
+            <a class="proof-jump" href="#galley">看校样</a>
+          </div>
+          <div class="source-card">
+            <button type="button" class="source-line" data-lede="crew" aria-pressed="false">
+              <span class="line-tag">公共参与</span>
+              <span class="line-text" lang="en">Ten minutes later, she was outside the hall <span class="ink">collecting signatures for an access ramp.</span></span>
+            </button>
+            <a class="proof-jump" href="#galley">看校样</a>
+          </div>
+        </div>
+        <details class="translation">
+          <summary>查看中文</summary>
+          <p>阿禾在电话里把助听器的使用说明念给父亲听。十分钟后，她在礼堂外为修建无障碍坡道征集签名。</p>
+        </details>
+      </section>
+
+      <section class="galley" id="galley" tabindex="-1" aria-labelledby="galley-heading">
+        <div class="sheet-heading">
+          <h2 id="galley-heading">节目单校样</h2>
+          <button class="compare-toggle" id="compare-toggle" type="button" aria-expanded="false" aria-controls="compare-proofs">并排比较</button>
+        </div>
+        <div id="single-proof">
+          <p class="empty-proof" id="empty-proof">点一句原稿，在这里看它怎样变成标题和导语。</p>
+          <article class="proof" id="active-proof" hidden>
+            <p class="proof-label" id="active-label"></p>
+            <h3 lang="en" id="active-title"></h3>
+            <p class="lede" lang="en" id="active-lede"></p>
+          </article>
+        </div>
+        <div id="compare-proofs" class="compare-proofs" hidden></div>
+        <p class="comparison-prompt" lang="en">What would a reader expect from this introduction? What would they miss?</p>
+      </section>
+      <p class="visually-hidden" id="announcement" role="status" aria-live="polite"></p>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ececfc">
+  <meta name="description" content="十件能亲手改动变量、观察后果的教学交互设计。">
+  <title>改写现场 / Change One Thing</title>
+  <link rel="icon" href="assets/mark.png" type="image/png">
+  <link rel="stylesheet" href="stage.css">
+  <script defer src="/demo-bridge.js"></script>
+  <script defer src="stage.js"></script>
+</head>
+<body>
+  <a class="skip-jump" href="#main">跳到主要内容</a>
+  <header class="house-header">
+    <a class="house-brand" href="#home"><span class="house-mark" aria-hidden="true"></span><strong>改写现场</strong><span lang="en">Change One Thing</span></a>
+    <button type="button" class="house-index" id="open-index" aria-haspopup="dialog"><span aria-hidden="true">⊞</span> 舞台索引</button>
+  </header>
+  <main id="main" tabindex="-1">
+    <section class="foyer" id="foyer" aria-labelledby="foyer-title">
+      <div class="foyer-art" aria-hidden="true"><img id="foyer-cover" width="1536" height="1024" alt=""></div>
+      <div class="foyer-body">
+        <div class="foyer-copy">
+          <p class="foyer-kicker">交互设计作品集 <span>2026</span></p>
+          <h1 id="foyer-title">改写<br>现场<span>。</span></h1>
+          <p class="foyer-line">改变一个变量，看看会发生什么。</p>
+          <div class="foyer-selection">
+            <span id="foyer-index" class="foyer-index" aria-hidden="true"></span>
+            <div class="foyer-project" aria-live="polite">
+              <h2 id="foyer-project-title"></h2>
+              <p id="foyer-project-desc"></p>
+            </div>
+          </div>
+          <a class="enter-stage" id="enter-stage">进场试做 <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="dial-zone">
+          <div class="dial-frame">
+            <div class="dial-ticks" aria-hidden="true"></div>
+            <div class="dial-fiducials" id="dial-fiducials" aria-hidden="true"></div>
+            <div class="dial-hand" aria-hidden="true"><i></i></div>
+            <div class="dial-touch" id="dial-touch" role="slider" tabindex="0" aria-label="选择舞台" aria-valuemin="1" aria-valuemax="10" aria-valuenow="1">
+              <span class="dial-brackets" aria-hidden="true">＋</span>
+              <span id="dial-number" aria-hidden="true">01</span>
+              <span aria-hidden="true">拖动选场</span>
+            </div>
+          </div>
+          <div class="dial-stepper" aria-label="逐个切换舞台">
+            <button type="button" id="dial-previous" aria-label="拨到上一座舞台">‹</button>
+            <span>舞台拨盘</span>
+            <button type="button" id="dial-next" aria-label="拨到下一座舞台">›</button>
+          </div>
+        </div>
+      </div>
+      <nav class="foyer-track" id="foyer-track" aria-label="十座舞台"></nav>
+    </section>
+    <article class="theater" id="theater" hidden>
+      <header class="scene-bar">
+        <div class="scene-ident"><span id="scene-position" aria-hidden="true"></span><h1 id="scene-name" tabindex="-1"></h1><span id="scene-subject"></span></div>
+        <nav aria-label="舞台切换">
+          <button id="focus-scene" type="button" aria-pressed="false" title="专注模式"><span aria-hidden="true">⛶</span> <span id="focus-label">专注</span></button>
+          <a class="arrow-nav" id="previous-scene" aria-label="上一座舞台" title="上一座舞台">←</a>
+          <a class="arrow-nav" id="next-scene" aria-label="下一座舞台" title="下一座舞台">→</a>
+        </nav>
+      </header>
+      <div class="scene" id="scene"></div>
+      <p class="scene-completion" id="scene-completion" role="status"></p>
+      <div class="scene-notes">
+        <div><p class="note-kicker" id="scene-style"></p><h2>设计场记</h2></div>
+        <div><p id="scene-note"></p><a href="#home">返回选场 <span aria-hidden="true">↖</span></a></div>
+        <a class="next-note" id="next-note"><span>下一座舞台</span><strong></strong><span aria-hidden="true">↗</span></a>
+      </div>
+    </article>
+  </main>
+  <footer class="house-footer"><span lang="en">Change One Thing</span><span>十件教学交互作品</span></footer>
+  <dialog id="scene-index" aria-labelledby="index-heading">
+    <div class="index-top">
+      <div><h2 id="index-heading">舞台索引</h2><p>直接进入任一作品。</p></div>
+      <form method="dialog"><button aria-label="关闭舞台索引">×</button></form>
+    </div>
+    <nav id="index-scenes" aria-label="全部舞台"></nav>
+  </dialog>
+  <noscript><p class="script-message">请启用 JavaScript 以操作这些舞台。</p></noscript>
+</body>
+</html>

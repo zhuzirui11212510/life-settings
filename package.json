@@ -9,8 +9,11 @@
   },
   "scripts": {
     "start": "node local/server.mjs",
-    "check": "node --check local/server.mjs && node --check shared/core.mjs && node --check public/life.js && node --check public/poster.js && node --check public/fields.js",
-    "test": "node tests/ui-smoke.cjs"
+    "check": "node --check local/server.mjs && node --check shared/core.mjs && node --check public/life.js && node --check public/poster.js && node --check public/fields.js && node --check unit4/server.mjs && node --check unit4/store.mjs && node --check unit4/schema.mjs && node --check unit4/lessons.mjs && node --check unit4/demo-catalog.mjs && node --check unit4/take-the-light.mjs && node --check unit4/public/demo-bridge.js && node --check unit4/public/app.js && node --check unit4/public/connection.js && node --check unit4/public/view.js && node --check unit4/public/demos/take-the-light/v1/lede.js",
+    "test": "node tests/ui-smoke.cjs",
+    "unit4": "node unit4/server.mjs",
+    "unit4:lan": "node unit4/server.mjs --lan",
+    "test:unit4": "node --test unit4/*.test.*"
   },
   "devDependencies": {
     "jsdom": "31.0.0"

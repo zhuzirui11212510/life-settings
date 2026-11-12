@@ -1,0 +1,14 @@
+[
+  {
+    "id": "ribbon-cut",
+    "title": "沿着纸带 · 剪开以后",
+    "description": "扭合、描线、剪开。用可转动的三维纸带观察接缝怎样改变剪开后的形状。",
+    "prompt": "选一个扭转次数，切到「剪开」，再选择路线。完成一次剪切后，提交你实际观察到的结果。",
+    "hash": "",
+    "options": [
+      { "id": "single-ring", "label": "一条长环" },
+      { "id": "linked-rings", "label": "两个互相套住的环" },
+      { "id": "separate-rings", "label": "两个分离的环" }
+    ]
+  }
+]
